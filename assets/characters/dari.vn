@@ -1,0 +1,12 @@
+# ==============================================================================
+# Конфигурация персонажа: Дари (assets/characters/dari.vn)
+# ==============================================================================
+
+id = dari
+name = @char.dari
+scale = 1.0
+
+# Эмоции персонажа и пути к текстурам
+expr.normal = "assets/textures/characters/dari/normal.png"
+expr.happy = "assets/textures/characters/dari/normal.png"
+expr.shock = "assets/textures/characters/dari/normal.png"

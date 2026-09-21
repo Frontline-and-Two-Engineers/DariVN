@@ -1,0 +1,119 @@
+# ==============================================================================
+# Сценарий демонстрационной главы визуальной новеллы DariVN
+# Все персонажи, слои, переходы, координаты, переменные и условия настраиваются прямо здесь!
+# ==============================================================================
+
+# Инициализация переменных сценария
+$player_name = "Даня"
+$points = 0
+$visited_roof = false
+
+# 1. Загрузка конфигураций персонажей из отдельных файлов (assets/characters/<id>.vn)
+load character dari
+load character shadow
+
+# Запуск фоновой музыки с плавным появлением (fade 1.5)
+play music "assets/audio/bgm/demo_theme.mp3" loop fade 1.5 volume 0.8
+
+# 2. Установка фона с плавным переходом Fade
+scene "assets/textures/backgrounds/classroom.jpg" with fade 1.0
+
+# 3. Показ персонажа со свободной позицией X Y и слоем (layer 1)
+show dari at center layer 1
+
+dari @story.welcome
+play sound "assets/audio/sfx/bell.wav"
+dari @story.features
+dari @story.pause_demo
+dari "Смотри: прямо в сценарии можно писать {color=#38bdf8}любой кастомный HEX-цвет{/color} и {b}{i}комбинировать стили{/i}{/b}!"
+dari "А ещё мы поддержали {b}переменные и условия{/b}!"
+dari "Привет, {b}{$player_name}{/b}! Твои очки: {b}{color=#22c55e}{$points}{/color}{/b}."
+dari "Имена персонажей тоже берутся из локализации: {loc=char.dari} и {loc=char.shadow}!"
+dari "Например, сейчас позади меня на слое 0 появится второй персонаж..."
+
+# Показываем второго персонажа позади (layer 0) со свободными координатами
+# У shadow в конфигурации shadow.vn уже по умолчанию включен силуэт!
+show shadow at 240 130 layer 0
+
+dari "Видишь силуэт слева позади меня? Он нарисован на слое 0, а я перед ним!"
+
+# Перемещаем Дари только по горизонтали в X=680
+move dari to 680
+
+dari "А теперь я плавно переместилась только по горизонтали в координаты X=680!"
+hop dari 0.3
+dari "Смотри! Командой {b}hop dari 0.3{/b} я могу радостно подпрыгивать!"
+shake dari 0.4
+dari "А командой {b}shake dari 0.4{/b} персонаж вздрагивает от испуга или неожиданности!"
+flash dari 0.25
+dari "Команда {b}flash dari 0.25{/b} создаёт яркую белую вспышку на спрайте!"
+effect dari tint 0.6 0.6 0.95
+dari "Команда {b}effect dari tint{/b} окрашивает персонажа в холодный ночной оттенок..."
+effect dari clear
+dari "А {b}effect dari clear{/b} возвращает обычный цвет!"
+dari "А ещё мы внедрили автоматический перенос строк (Word Wrapping) и шейдерные переходы между сценами!"
+dari "Благодаря эффектам, слоям и анимациям персонажи становятся по-настоящему живыми!"
+
+choice:
+    @choice.roof_chapter2 -> script "assets/scripts/chapter2.vn"
+    @choice.roof_now if not $visited_roof -> rooftop_direct
+    @choice.shaders -> shaders_branch
+    @choice.ending -> ending_branch
+
+label rooftop_direct
+$visited_roof = true
+$points += 15
+dari "Смотри! Сейчас сцена сменится на новый фон крыши через Dissolve..."
+scene "assets/textures/backgrounds/rooftop.jpg" with dissolve 1.5
+dari "Вау! Мы перенеслись на закатную крышу школы!"
+dari "Посмотри, какие яркие закатные цвета и красивый силуэт города!"
+dari "За исследование крыши начислено +15 очков!"
+dari @story.points_status
+dari "А теперь вернёмся обратно в класс через плавный Crossfade..."
+scene "assets/textures/backgrounds/classroom.jpg" with crossfade 1.5
+dari "И мы снова в классе! Переходы работают с любыми фонами в игре."
+jump ending_branch
+
+label shaders_branch
+$points += 10
+effect vignette 0.8
+dari "Смотри! Командой effect vignette 0.8 я включила кинематографичную виньетку по краям экрана!"
+effect sepia 1.0
+dari "А теперь команда effect sepia 1.0 перевела всю сцену в тёплый оттенок сепии (режим воспоминаний)!"
+effect blur 0.6
+dari "Команда effect blur 0.6 добавляет мягкое размытие — полезно для эффектов сна, обморока или воспоминаний."
+effect clear
+dari "А командой effect clear все пост-эффекты мгновенно сбрасываются!"
+dari "За изучение шейдеров начислено +10 очков!"
+dari @story.points_status
+jump ending_branch
+
+label ending_branch
+show dari at center layer 1
+hide shadow
+dari "Второй персонаж скрылся со сцены командой hide shadow."
+dari "Итоговый счёт за прохождение демки: {b}{color=#eab308}{$points}{/color}{/b} очков!"
+if $points >= 15 jump high_score_label
+dari "Хорошее начало! Но можно набрать больше очков, исследуя другие ветки."
+jump end_choices
+
+label high_score_label
+hop dari 0.3
+dari "Великолепно! Ты набрал высокий балл за исследование интерактивных веток!"
+
+label end_choices
+choice:
+    "Перейти во вторую главу (chapter2.vn)" -> script "assets/scripts/chapter2.vn"
+    "Секретный бонус крыши" if $visited_roof -> roof_bonus
+    "Остаться здесь и нажать Escape для паузы" -> pause_hint
+
+label roof_bonus
+dari "Этот секретный бонус открылся, потому что ты уже побывал на крыше!"
+dari "Держи ещё 5 очков в награду!"
+$points += 5
+dari @story.points_status
+jump pause_hint
+
+label pause_hint
+dari "А если ты нажмёшь клавишу Escape, игра встанет на паузу и размоет всю сцену на фоне с помощью нашего Framebuffer!"
+"Нажми Escape, чтобы оценить размытие фона в меню паузы!"

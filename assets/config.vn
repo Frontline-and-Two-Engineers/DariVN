@@ -1,0 +1,33 @@
+# ==============================================================================
+# Конфигурационный файл визуальной новеллы DariVN (config.vn)
+# Все базовые настройки, ресурсы и сценарии настраиваются здесь!
+# ==============================================================================
+
+window.title = "DariVN - Visual Novel Engine"
+window.width = 1280
+window.height = 720
+window.vsync = true
+
+menu.background = "assets/textures/backgrounds/classroom.jpg"
+
+font.path = "assets/fonts/roboto.ttf"
+font.size = 34.0
+
+locale.default = "ru"
+locale.ru = "assets/locales/ru.ini"
+locale.en = "assets/locales/en.ini"
+locale.uk = "assets/locales/uk.ini"
+
+story.start_script = "assets/scripts/demo.vn"
+story.text_speed = 0.020
+
+audio.master_volume = 1.0
+audio.bgm_volume = 0.8
+audio.sfx_volume = 1.0
+audio.voice_volume = 1.0
+audio.ambient_volume = 0.7
+audio.bgm_crossfade = 1.5
+
+ui.click_sound = "assets/audio/sfx/click.wav"
+menu.music = "assets/audio/bgm/menu_theme.mp3"
+menu.shader = ""

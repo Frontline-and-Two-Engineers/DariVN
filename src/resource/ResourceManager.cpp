@@ -1,5 +1,78 @@
-//
-// Created by wolframoviy on 16.09.26.
-//
-
 #include "ResourceManager.hpp"
+#include "renderer/Shader.hpp"
+#include "renderer/Texture2D.hpp"
+
+#include <iostream>
+
+std::shared_ptr<Shader> ResourceManager::loadShader(const std::string& name, 
+                                                    const std::string& vertexPath, 
+                                                    const std::string& fragmentPath) {
+    auto it = s_shaders.find(name);
+    if (it != s_shaders.end()) {
+        return it->second;
+    }
+
+    auto shader = std::make_shared<Shader>();
+    if (!shader->loadFromFiles(vertexPath, fragmentPath)) {
+        std::cerr << "[ResourceManager] Failed to load shader: " << name << std::endl;
+        return nullptr;
+    }
+
+    s_shaders[name] = shader;
+    return shader;
+}
+
+std::shared_ptr<Shader> ResourceManager::getShader(const std::string& name) {
+    auto it = s_shaders.find(name);
+    if (it == s_shaders.end()) {
+        std::cerr << "[ResourceManager] Shader not found: " << name << std::endl;
+        return nullptr;
+    }
+    return it->second;
+}
+
+std::shared_ptr<Texture2D> ResourceManager::loadTexture(const std::string& name, 
+                                                        const std::string& path, 
+                                                        bool flipVertically) {
+    auto it = s_textures.find(name);
+    if (it != s_textures.end()) {
+        return it->second;
+    }
+
+    auto texture = std::make_shared<Texture2D>();
+    if (!texture->loadFromFile(path, flipVertically)) {
+        std::cerr << "[ResourceManager] Failed to load texture: " << name << " from " << path << std::endl;
+        return nullptr;
+    }
+
+    s_textures[name] = texture;
+    return texture;
+}
+
+std::shared_ptr<Texture2D> ResourceManager::loadTexture(const std::string& path, bool flipVertically) {
+    return loadTexture(path, path, flipVertically);
+}
+
+std::shared_ptr<Texture2D> ResourceManager::getTexture(const std::string& name) {
+    auto it = s_textures.find(name);
+    if (it == s_textures.end()) {
+        std::cerr << "[ResourceManager] Texture not found: " << name << std::endl;
+        return nullptr;
+    }
+    return it->second;
+}
+
+std::shared_ptr<Texture2D> ResourceManager::getWhiteTexture() {
+    if (!s_whiteTexture) {
+        s_whiteTexture = std::make_shared<Texture2D>();
+        const unsigned char whitePixel[] = { 255, 255, 255, 255 };
+        s_whiteTexture->loadFromMemory(whitePixel, 1, 1, 4);
+    }
+    return s_whiteTexture;
+}
+
+void ResourceManager::clear() {
+    s_shaders.clear();
+    s_textures.clear();
+    s_whiteTexture.reset();
+}

@@ -1,13 +1,53 @@
-//
-// Created by wolframoviy on 16.09.26.
-//
+#pragma once
 
 #ifndef DARIVN_SHADER_HPP
 #define DARIVN_SHADER_HPP
 
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <glm/glm.hpp>
 
 class Shader {
-};
+public:
+    Shader() = default;
+    Shader(const std::string& vertexPath, const std::string& fragmentPath);
+    ~Shader();
 
+    // Запрещаем копирование, чтобы избежать двойного вызова glDeleteProgram
+    Shader(const Shader&) = delete;
+    Shader& operator=(const Shader&) = delete;
+
+    // Разрешаем перемещение (Move semantics)
+    Shader(Shader&& other) noexcept;
+    Shader& operator=(Shader&& other) noexcept;
+
+    // Загрузка и компиляция
+    bool loadFromFiles(const std::string& vertexPath, const std::string& fragmentPath);
+    bool loadFromMemory(const std::string& vertexSrc, const std::string& fragmentSrc);
+
+    void bind() const;
+    void unbind() const;
+
+    [[nodiscard]] unsigned int getID() const { return m_programID; }
+    [[nodiscard]] bool isValid() const { return m_programID != 0; }
+
+    // Установка Uniform-переменных
+    void setInt(std::string_view name, int value);
+    void setFloat(std::string_view name, float value);
+    void setVec2(std::string_view name, const glm::vec2& value);
+    void setVec3(std::string_view name, const glm::vec3& value);
+    void setVec4(std::string_view name, const glm::vec4& value);
+    void setMat4(std::string_view name, const glm::mat4& matrix);
+
+private:
+    int getUniformLocation(std::string_view name);
+    static unsigned int compileShader(unsigned int type, const std::string& source);
+    void destroy();
+
+private:
+    unsigned int m_programID = 0;
+    std::unordered_map<std::string, int> m_uniformLocationCache;
+};
 
 #endif //DARIVN_SHADER_HPP

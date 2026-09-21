@@ -1,6 +1,7 @@
-#include <iostream>
+#include "core/Application.hpp"
 
-int main(void) {
-
+int main() {
+    Application app;
+    app.run();
     return 0;
 }
