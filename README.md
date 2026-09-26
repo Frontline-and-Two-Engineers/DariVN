@@ -151,9 +151,10 @@ Ensure the working directory contains the `assets/` directory (or run directly f
 **DariVN** is available under a dual-licensing scheme:
 
 1. **GNU AGPLv3 (Open-Source):**
-   Free for community, hobbyist, and open-source projects. If you modify the engine or build products with it (including network/cloud-distributed versions), your source code and modifications must be made public under the AGPLv3.
+   Free for community, hobbyist, and open-source projects. If you modify the engine or build products with it (including network/cloud-distributed versions), your source code and modifications must be made public under the AGPLv3. See [`LICENSE`](LICENSE) (AGPLv3).
 2. **Commercial License:**
-   For studios and indie developers looking to release commercial games on Steam, App Store, Google Play, or consoles without disclosing their proprietary source code, narrative scripts, or engine changes. Contact the author for commercial licensing inquiries.
+   For studios and indie developers looking to release commercial games on Steam, App Store, Google Play, or consoles without disclosing their proprietary source code, narrative scripts, or engine changes. See [`LICENSE-COMMERCIAL.md`](LICENSE-COMMERCIAL.md) or contact [arsenii.soloviov.02@gmail.com](mailto:arsenii.soloviov.02@gmail.com).
+
 
 ---
 
@@ -291,9 +292,10 @@ cmake --build build --config Release
 Рушій **DariVN** доступний за двома моделями ліцензування:
 
 1. **GNU AGPLv3 (Open-Source):**
-   Безкоштовно для некомерційного використання, навчання та проєктів із відкритим вихідним кодом. Якщо ви модифікуєте рушій або створюєте похідні продукти, ви зобов'язані відкривати весь вихідний код на умовах AGPLv3.
+   Безкоштовно для некомерційного використання, навчання та проєктів із відкритим вихідним кодом. Якщо ви модифікуєте рушій або створюєте похідні продукти, ви зобов'язані відкривати весь вихідний код на умовах AGPLv3. Див. [`LICENSE`](LICENSE).
 2. **Комерційна ліцензія:**
-   Для студій та інді-розробників, які планують комерційний реліз гри (в Steam, App Store, Google Play тощо) без необхідності відкривати вихідний код своєї новели та внесених змін до рушія. З питань комерційної ліцензії звертайтеся до автора проєкту.
+   Для студій та інді-розробників, які планують комерційний реліз гри (в Steam, App Store, Google Play тощо) без необхідності відкривати вихідний код своєї новели та внесених змін до рушія. Див. [`LICENSE-COMMERCIAL.md`](LICENSE-COMMERCIAL.md) або пишіть на [arsenii.soloviov.02@gmail.com](mailto:arsenii.soloviov.02@gmail.com).
+
 
 ---
 
@@ -431,8 +433,9 @@ cmake --build build --config Release
 Движок **DariVN** распространяется по модели двойного лицензирования:
 
 1. **AGPLv3 (GNU Affero General Public License v3.0):**
-   Бесплатно для сообщества, образовательных целей и проектов с открытым исходным кодом. Если вы модифицируете движок или распространяете производные работы (в том числе по сети/облаку), вы обязаны открывать исходный код на условиях AGPLv3.
+   Бесплатно для сообщества, образовательных целей и проектов с открытым исходным кодом. Если вы модифицируете движок или распространяете производные работы (в том числе по сети/облаку), вы обязаны открывать исходный код на условиях AGPLv3. См. [`LICENSE`](LICENSE).
 2. **Коммерческая лицензия:**
-   Для студий и инди-разработчиков, планирующих коммерческий релиз игры в Steam, App Store, Google Play или на других площадках без необходимости раскрывать исходный код своей игры и модификаций движка. По вопросам приобретения коммерческой лицензии: *обратитесь к автору проекта*.
+   Для студий и инди-разработчиков, планирующих коммерческий релиз игры в Steam, App Store, Google Play или на других площадках без необходимости раскрывать исходный код своей игры и модификаций движка. См. [`LICENSE-COMMERCIAL.md`](LICENSE-COMMERCIAL.md) или напишите на [arsenii.soloviov.02@gmail.com](mailto:arsenii.soloviov.02@gmail.com).
+
 
 *Все используемые сторонние библиотеки (GLFW, GLM, GLAD, miniaudio, stb) распространяются под разрешительными лицензиями (MIT, zlib, Public Domain) и полностью совместимы с обеими моделями распространения.*
