@@ -43,6 +43,12 @@ struct CharacterAnimationEvent {
     enum class Type { Shake, Hop, Flash };
 };
 
+// Запись в истории диалогов (бэклоге)
+struct DialogueLogEntry {
+    std::string speaker; // Имя персонажа (может быть пустым для рассказчика)
+    std::string text;    // Полный текст реплики
+};
+
 class StoryEngine {
 public:
     using AnimationEventHandler = std::function<void(const std::string& charId, CharacterAnimationEvent::Type type, float p1, float p2)>;
@@ -128,6 +134,15 @@ public:
     [[nodiscard]] const std::unordered_map<std::string, ScriptValue>& getVariables() const { return m_variables; }
     void clearVariables();
 
+    // История диалогов (бэклог)
+    [[nodiscard]] const std::vector<DialogueLogEntry>& getDialogueHistory() const { return m_dialogueHistory; }
+    void clearDialogueHistory() { m_dialogueHistory.clear(); }
+
+    // Сохранение и загрузка состояния
+    [[nodiscard]] const std::string& getCurrentScriptPath() const { return m_currentScriptPath; }
+    void captureSaveState(struct GameSaveState& outState) const;
+    bool restoreSaveState(const struct GameSaveState& state);
+
     // Запуск и исполнение команд сценария
     void start() { executeNextCommand(); }
     void executeNextCommand();
@@ -147,6 +162,7 @@ private:
     AudioEventHandler m_audioHandler;
 
 private:
+    std::string m_currentScriptPath;
     std::vector<ScriptCommand> m_commands;
     std::unordered_map<std::string, size_t> m_labelIndices;
     size_t m_currentCommandIndex = 0;
@@ -173,6 +189,10 @@ private:
     bool m_isWaitingForChoice = false;
     std::vector<ChoiceOption> m_currentChoices;
     bool m_isFinished = false;
+
+    // История диалогов (максимум 250 последних реплик)
+    std::vector<DialogueLogEntry> m_dialogueHistory;
+    static constexpr size_t MAX_LOG_ENTRIES = 250;
 };
 
 #endif //DARIVN_STORYENGINE_HPP

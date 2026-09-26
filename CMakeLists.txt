@@ -28,6 +28,8 @@ add_executable(DariVN
         src/core/Application.hpp
         src/core/Config.cpp
         src/core/Config.hpp
+        src/core/SaveManager.cpp
+        src/core/SaveManager.hpp
         src/core/Window.cpp
         src/core/Window.hpp
         src/core/Input.cpp

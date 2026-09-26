@@ -31,6 +31,9 @@ public:
     // Вспомогательная белая текстура 1x1 для рисования цветных плашек и UI без картинок
     static std::shared_ptr<Texture2D> getWhiteTexture();
 
+    // Удаление отдельной текстуры из кэша (для сброса превью сохранений)
+    static bool removeTexture(const std::string& name);
+
     // Очистка всех кэшированных ресурсов
     static void clear();
 

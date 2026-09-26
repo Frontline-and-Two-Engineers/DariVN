@@ -23,6 +23,14 @@ public:
     // Получение всех записей с заданным префиксом (например, "locale.")
     static std::vector<std::pair<std::string, std::string>> getEntriesWithPrefix(const std::string& prefix);
 
+    // Пользовательские настройки (имеют приоритет над базовым файлом конфигурации)
+    static bool loadUserSettings(const std::string& filePath = "");
+    static bool saveUserSettings(const std::string& filePath = "");
+    static void setUserSetting(const std::string& key, const std::string& value);
+    static void resetUserSettings();
+    static std::string getUserSettingsPath();
+    static void setUserSettingsPath(const std::string& path);
+
     // Проверка наличия и установка параметров
     static bool has(const std::string& key);
     static void set(const std::string& key, const std::string& value);
@@ -30,6 +38,9 @@ public:
 
 private:
     static std::unordered_map<std::string, std::string> s_entries;
+    static std::unordered_map<std::string, std::string> s_baseEntries;
+    static std::unordered_map<std::string, std::string> s_userOverrides;
+    static std::string s_userSettingsPath;
 };
 
 #endif //DARIVN_CONFIG_HPP

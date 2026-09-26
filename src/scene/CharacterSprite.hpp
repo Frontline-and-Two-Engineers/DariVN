@@ -82,6 +82,7 @@ public:
     [[nodiscard]] const std::string& getCurrentExpression() const { return m_currentExpression; }
     [[nodiscard]] bool isVisible() const { return m_alpha > 0.005f; }
     [[nodiscard]] float getAlpha() const { return m_alpha; }
+    void setAlpha(float alpha) { m_alpha = alpha; m_targetAlpha = alpha; }
     [[nodiscard]] glm::vec2 getPosition() const { return m_position; }
     [[nodiscard]] glm::vec2 getSize() const { return m_size; }
 

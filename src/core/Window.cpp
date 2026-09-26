@@ -58,4 +58,25 @@ void Window::getFramebufferSize(int* width, int* height) const {
         if (height) *height = m_height;
     }
 }
+
+void Window::setFullscreen(bool fullscreen) {
+    if (!m_window) return;
+    if (m_isFullscreen == fullscreen) return;
+    m_isFullscreen = fullscreen;
+
+    if (fullscreen) {
+        glfwGetWindowPos(m_window, &m_windowedX, &m_windowedY);
+        glfwGetWindowSize(m_window, &m_windowedWidth, &m_windowedHeight);
+        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+        if (monitor) {
+            const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+            if (mode) {
+                glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+            }
+        }
+    } else {
+        glfwSetWindowMonitor(m_window, nullptr, m_windowedX, m_windowedY, m_windowedWidth, m_windowedHeight, 0);
+    }
+}
+
 bool Window::isKeyJustPressed(int key) const { return glfwGetKey(m_window, key) == GLFW_PRESS; }

@@ -71,6 +71,15 @@ std::shared_ptr<Texture2D> ResourceManager::getWhiteTexture() {
     return s_whiteTexture;
 }
 
+bool ResourceManager::removeTexture(const std::string& name) {
+    auto it = s_textures.find(name);
+    if (it != s_textures.end()) {
+        s_textures.erase(it);
+        return true;
+    }
+    return false;
+}
+
 void ResourceManager::clear() {
     s_shaders.clear();
     s_textures.clear();

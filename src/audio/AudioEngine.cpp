@@ -115,7 +115,7 @@ void AudioEngine::setBGMVolume(float volume) {
 
 void AudioEngine::applyTrackVolume(BgmTrack& track) {
     if (track.sound && m_initialized) {
-        float effectiveVol = m_bgmVolume * track.userVolume * track.currentFadeGain;
+        float effectiveVol = m_bgmVolume * track.userVolume * track.currentFadeGain * m_currentDuckMultiplier;
         ma_sound_set_volume(track.sound.get(), std::clamp(effectiveVol, 0.0f, 1.0f));
     }
 }
@@ -127,7 +127,7 @@ void AudioEngine::setAmbientVolume(float volume) {
 
 void AudioEngine::applyAmbientVolume() {
     if (m_ambientSound && m_initialized) {
-        float effectiveVol = m_ambientVolume * m_ambientUserVolume * m_ambientCurrentFadeGain;
+        float effectiveVol = m_ambientVolume * m_ambientUserVolume * m_ambientCurrentFadeGain * (m_currentDuckMultiplier * 0.5f + 0.5f);
         ma_sound_set_volume(m_ambientSound.get(), std::clamp(effectiveVol, 0.0f, 1.0f));
     }
 }
@@ -466,8 +466,30 @@ bool AudioEngine::isAmbientPlaying() const {
     return m_ambientSound && ma_sound_is_playing(m_ambientSound.get());
 }
 
+void AudioEngine::setMusicDucked(bool ducked, float duration) {
+    m_musicDucked = ducked;
+    m_targetDuckMultiplier = ducked ? 0.35f : 1.0f;
+    m_duckFadeDuration = (duration > 0.0f) ? duration : 0.4f;
+    m_duckFadeTimer = 0.0f;
+    m_duckStartMultiplier = m_currentDuckMultiplier;
+}
+
 void AudioEngine::update(float deltaTime) {
     if (!m_initialized) return;
+
+    // 0. Обработка Ducking (плавного приглушения / восстановления звука)
+    if (m_currentDuckMultiplier != m_targetDuckMultiplier) {
+        m_duckFadeTimer += deltaTime;
+        float t = (m_duckFadeDuration > 0.0f) ? std::clamp(m_duckFadeTimer / m_duckFadeDuration, 0.0f, 1.0f) : 1.0f;
+        m_currentDuckMultiplier = m_duckStartMultiplier + t * (m_targetDuckMultiplier - m_duckStartMultiplier);
+        if (m_currentBgm) {
+            applyTrackVolume(*m_currentBgm);
+        }
+        for (auto& track : m_fadingOutBgms) {
+            if (track) applyTrackVolume(*track);
+        }
+        applyAmbientVolume();
+    }
 
     // 1. Обработка фейдинга текущего BGM (Fade In или затухание)
     if (m_currentBgm && m_currentBgm->isFading) {

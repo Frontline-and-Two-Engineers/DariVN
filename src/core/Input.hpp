@@ -29,6 +29,10 @@ public:
     static float getMouseX();
     static float getMouseY();
 
+    // Колесико мыши
+    static float getMouseScrollY();
+    static float getMouseScrollX();
+
     static void setVirtualResolution(float width, float height);
 
 private:
@@ -43,6 +47,8 @@ private:
     static inline std::array<bool, 16> s_previousMouseButtons{};
 
     static inline glm::vec2 s_mousePos{0.0f, 0.0f};
+    static inline float s_scrollX = 0.0f;
+    static inline float s_scrollY = 0.0f;
 };
 
 #endif //DARIVN_INPUT_HPP

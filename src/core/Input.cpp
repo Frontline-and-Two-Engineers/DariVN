@@ -49,11 +49,26 @@ void Input::init(GLFWwindow* window, float virtualWidth, float virtualHeight) {
             s_mousePos.y = static_cast<float>(ypos) * (s_virtualHeight / static_cast<float>(winH));
         }
     });
+
+    glfwSetScrollCallback(window, [](GLFWwindow*, double xoffset, double yoffset) {
+        s_scrollX += static_cast<float>(xoffset);
+        s_scrollY += static_cast<float>(yoffset);
+    });
 }
 
 void Input::update() {
     s_previousKeys = s_currentKeys;
     s_previousMouseButtons = s_currentMouseButtons;
+    s_scrollX = 0.0f;
+    s_scrollY = 0.0f;
+}
+
+float Input::getMouseScrollY() {
+    return s_scrollY;
+}
+
+float Input::getMouseScrollX() {
+    return s_scrollX;
 }
 
 bool Input::isKeyDown(int key) {

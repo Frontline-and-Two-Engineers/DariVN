@@ -62,6 +62,11 @@ public:
     [[nodiscard]] bool isAmbientPlaying() const;
     [[nodiscard]] const std::string& getCurrentAmbientPath() const { return m_currentAmbientPath; }
 
+    // 5. Приглушение звука (Music & Ambient Ducking для меню паузы и беклога)
+    void setMusicDucked(bool ducked, float duration = 0.4f);
+    [[nodiscard]] bool isMusicDucked() const { return m_musicDucked; }
+    [[nodiscard]] float getDuckMultiplier() const { return m_currentDuckMultiplier; }
+
     // Обновление состояния (фейды и очистка завершившихся SFX)
     void update(float deltaTime);
 
@@ -106,6 +111,14 @@ private:
     // Active SFX
     std::vector<std::unique_ptr<ma_sound>> m_activeSfx;
     std::mutex m_sfxMutex;
+
+    // Music & Ambient Ducking
+    bool m_musicDucked = false;
+    float m_currentDuckMultiplier = 1.0f;
+    float m_targetDuckMultiplier = 1.0f;
+    float m_duckFadeDuration = 0.4f;
+    float m_duckFadeTimer = 0.0f;
+    float m_duckStartMultiplier = 1.0f;
 };
 
 #endif //DARIVN_AUDIOENGINE_HPP
