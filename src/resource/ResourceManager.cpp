@@ -1,3 +1,22 @@
+/*
+ * DariVN - Visual Novel Engine
+ *
+ * Copyright (C) 2026 Arsenii Soloviov <arsenii.soloviov.02@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "ResourceManager.hpp"
 #include "renderer/Shader.hpp"
 #include "renderer/Texture2D.hpp"
@@ -69,6 +88,15 @@ std::shared_ptr<Texture2D> ResourceManager::getWhiteTexture() {
         s_whiteTexture->loadFromMemory(whitePixel, 1, 1, 4);
     }
     return s_whiteTexture;
+}
+
+bool ResourceManager::removeTexture(const std::string& name) {
+    auto it = s_textures.find(name);
+    if (it != s_textures.end()) {
+        s_textures.erase(it);
+        return true;
+    }
+    return false;
 }
 
 void ResourceManager::clear() {

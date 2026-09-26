@@ -1,3 +1,22 @@
+/*
+ * DariVN - Visual Novel Engine
+ *
+ * Copyright (C) 2026 Arsenii Soloviov <arsenii.soloviov.02@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 #ifndef DARIVN_AUDIOENGINE_HPP
@@ -62,6 +81,11 @@ public:
     [[nodiscard]] bool isAmbientPlaying() const;
     [[nodiscard]] const std::string& getCurrentAmbientPath() const { return m_currentAmbientPath; }
 
+    // 5. Приглушение звука (Music & Ambient Ducking для меню паузы и беклога)
+    void setMusicDucked(bool ducked, float duration = 0.4f);
+    [[nodiscard]] bool isMusicDucked() const { return m_musicDucked; }
+    [[nodiscard]] float getDuckMultiplier() const { return m_currentDuckMultiplier; }
+
     // Обновление состояния (фейды и очистка завершившихся SFX)
     void update(float deltaTime);
 
@@ -106,6 +130,14 @@ private:
     // Active SFX
     std::vector<std::unique_ptr<ma_sound>> m_activeSfx;
     std::mutex m_sfxMutex;
+
+    // Music & Ambient Ducking
+    bool m_musicDucked = false;
+    float m_currentDuckMultiplier = 1.0f;
+    float m_targetDuckMultiplier = 1.0f;
+    float m_duckFadeDuration = 0.4f;
+    float m_duckFadeTimer = 0.0f;
+    float m_duckStartMultiplier = 1.0f;
 };
 
 #endif //DARIVN_AUDIOENGINE_HPP

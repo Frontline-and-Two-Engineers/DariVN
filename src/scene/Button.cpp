@@ -1,3 +1,22 @@
+/*
+ * DariVN - Visual Novel Engine
+ *
+ * Copyright (C) 2026 Arsenii Soloviov <arsenii.soloviov.02@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #include "Button.hpp"
 #include "renderer/SpriteRenderer.hpp"
 #include "renderer/TextRenderer.hpp"
@@ -34,10 +53,11 @@ void Button::render(SpriteRenderer& spriteRenderer, TextRenderer& textRenderer) 
     spriteRenderer.drawRect(glm::vec2(m_position.x + m_size.x - bw, m_position.y), glm::vec2(bw, m_size.y), borderColor); // право
 
     // 3. Выравнивание текста по центру кнопки с авто-подгонкой масштаба
-    float scale = 0.85f;
+    float scale = (m_textScale > 0.0f) ? m_textScale : 0.85f;
     glm::vec2 textSize = textRenderer.measureText(m_text, scale);
-    if (textSize.x > m_size.x - 24.0f && textSize.x > 0.0f) {
-        scale *= (m_size.x - 24.0f) / textSize.x;
+    float margin = (m_textScale > 0.0f) ? 8.0f : 24.0f;
+    if (textSize.x > m_size.x - margin && textSize.x > 0.0f) {
+        scale *= (m_size.x - margin) / textSize.x;
         textSize = textRenderer.measureText(m_text, scale);
     }
     float textX = m_position.x + (m_size.x - textSize.x) * 0.5f;

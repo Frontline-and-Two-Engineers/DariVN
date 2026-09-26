@@ -1,3 +1,20 @@
+# DariVN - Visual Novel Engine
+#
+# Copyright (C) 2026 Arsenii Soloviov <arsenii.soloviov.02@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 cmake_minimum_required(VERSION 3.24)
 project(DariVN LANGUAGES C CXX)
 
@@ -28,6 +45,8 @@ add_executable(DariVN
         src/core/Application.hpp
         src/core/Config.cpp
         src/core/Config.hpp
+        src/core/SaveManager.cpp
+        src/core/SaveManager.hpp
         src/core/Window.cpp
         src/core/Window.hpp
         src/core/Input.cpp
@@ -63,6 +82,22 @@ add_executable(DariVN
         src/script/StoryEngine.hpp
         src/audio/AudioEngine.cpp
         src/audio/AudioEngine.hpp
+        src/states/SharedContext.hpp
+        src/states/IGameState.hpp
+        src/states/StateManager.hpp
+        src/states/StateManager.cpp
+        src/states/MainMenuState.hpp
+        src/states/MainMenuState.cpp
+        src/states/GameplayState.hpp
+        src/states/GameplayState.cpp
+        src/states/PauseMenuState.hpp
+        src/states/PauseMenuState.cpp
+        src/states/BacklogState.hpp
+        src/states/BacklogState.cpp
+        src/states/SaveLoadState.hpp
+        src/states/SaveLoadState.cpp
+        src/states/SettingsState.hpp
+        src/states/SettingsState.cpp
         external/GLAD/src/glad.c
 )
 

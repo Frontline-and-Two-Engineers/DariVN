@@ -1,3 +1,22 @@
+/*
+ * DariVN - Visual Novel Engine
+ *
+ * Copyright (C) 2026 Arsenii Soloviov <arsenii.soloviov.02@gmail.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
 #ifndef DARIVN_STORYENGINE_HPP
@@ -41,6 +60,12 @@ struct ActiveCharacter {
 
 struct CharacterAnimationEvent {
     enum class Type { Shake, Hop, Flash };
+};
+
+// Запись в истории диалогов (бэклоге)
+struct DialogueLogEntry {
+    std::string speaker; // Имя персонажа (может быть пустым для рассказчика)
+    std::string text;    // Полный текст реплики
 };
 
 class StoryEngine {
@@ -128,6 +153,15 @@ public:
     [[nodiscard]] const std::unordered_map<std::string, ScriptValue>& getVariables() const { return m_variables; }
     void clearVariables();
 
+    // История диалогов (бэклог)
+    [[nodiscard]] const std::vector<DialogueLogEntry>& getDialogueHistory() const { return m_dialogueHistory; }
+    void clearDialogueHistory() { m_dialogueHistory.clear(); }
+
+    // Сохранение и загрузка состояния
+    [[nodiscard]] const std::string& getCurrentScriptPath() const { return m_currentScriptPath; }
+    void captureSaveState(struct GameSaveState& outState) const;
+    bool restoreSaveState(const struct GameSaveState& state);
+
     // Запуск и исполнение команд сценария
     void start() { executeNextCommand(); }
     void executeNextCommand();
@@ -147,6 +181,7 @@ private:
     AudioEventHandler m_audioHandler;
 
 private:
+    std::string m_currentScriptPath;
     std::vector<ScriptCommand> m_commands;
     std::unordered_map<std::string, size_t> m_labelIndices;
     size_t m_currentCommandIndex = 0;
@@ -173,6 +208,10 @@ private:
     bool m_isWaitingForChoice = false;
     std::vector<ChoiceOption> m_currentChoices;
     bool m_isFinished = false;
+
+    // История диалогов (максимум 250 последних реплик)
+    std::vector<DialogueLogEntry> m_dialogueHistory;
+    static constexpr size_t MAX_LOG_ENTRIES = 250;
 };
 
 #endif //DARIVN_STORYENGINE_HPP
