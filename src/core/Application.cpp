@@ -48,16 +48,81 @@
 #include <algorithm>
 #include <stdexcept>
 
-// Умный поиск ассетов: ищет файл в текущей папке и в родительской (для запуска из CLion cmake-build-debug)
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#elif defined(_WIN32)
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
+// Возвращает абсолютный путь к папке, где лежит исполняемый файл
+static std::filesystem::path getExecutableDir() {
+    static std::filesystem::path s_exeDir = []() {
+        try {
+#if defined(__APPLE__)
+            char path[1024];
+            uint32_t size = sizeof(path);
+            if (_NSGetExecutablePath(path, &size) == 0) {
+                return std::filesystem::canonical(path).parent_path();
+            }
+#elif defined(_WIN32)
+            wchar_t path[MAX_PATH];
+            if (GetModuleFileNameW(NULL, path, MAX_PATH) > 0) {
+                return std::filesystem::canonical(path).parent_path();
+            }
+#else
+            char path[1024];
+            ssize_t count = readlink("/proc/self/exe", path, sizeof(path) - 1);
+            if (count != -1) {
+                path[count] = '\0';
+                return std::filesystem::canonical(path).parent_path();
+            }
+#endif
+        } catch (...) {}
+        return std::filesystem::current_path();
+    }();
+    return s_exeDir;
+}
+
+// Умный поиск ассетов с поддержкой автономных билдов и запуска из любой директории:
+// 1. Относительно текущей рабочей папки (CWD)
+// 2. Рядом с исполняемым файлом (автономные билды / запуск из Finder)
+// 3. На уровень выше бинарника (cmake-build-debug/ -> корень проекта)
+// 4. На уровень выше CWD
 static std::string resolveAsset(const std::string& relativePath) {
     if (relativePath.empty()) return "";
-    if (std::filesystem::exists(relativePath)) {
-        return relativePath;
+
+    std::filesystem::path rel(relativePath);
+    if (rel.is_absolute() && std::filesystem::exists(rel)) {
+        return rel.string();
     }
-    if (std::filesystem::exists("../" + relativePath)) {
-        return "../" + relativePath;
+
+    // 1. В текущей директории
+    if (std::filesystem::exists(rel)) {
+        return rel.string();
     }
-    return relativePath;
+
+    // 2. В папке исполняемого файла
+    auto exeDir = getExecutableDir();
+    auto fromExe = exeDir / rel;
+    if (std::filesystem::exists(fromExe)) {
+        return fromExe.string();
+    }
+
+    // 3. На уровень выше папки бинарника (для запуска из cmake-build-debug/)
+    auto fromExeParent = exeDir.parent_path() / rel;
+    if (std::filesystem::exists(fromExeParent)) {
+        return fromExeParent.string();
+    }
+
+    // 4. На уровень выше текущей папки
+    auto fromCwdParent = std::filesystem::path("..") / rel;
+    if (std::filesystem::exists(fromCwdParent)) {
+        return fromCwdParent.string();
+    }
+
+    return (exeDir / rel).string();
 }
 
 Application::Application() = default;
@@ -79,6 +144,22 @@ CharacterSprite& Application::getOrCreateCharacter(const std::string& name) {
 
 bool Application::init() {
     std::cout << "[Application] Initializing DariVN Engine..." << std::endl;
+
+    // Автоматическая подстройка рабочей директории:
+    // Если игра запущена двойным кликом в Finder или из другой папки консоли,
+    // переключаем рабочую папку на директорию бинарника (где лежит assets/).
+    try {
+        if (!std::filesystem::exists("assets/config.vn") && !std::filesystem::exists("config.vn")) {
+            auto exeDir = getExecutableDir();
+            if (std::filesystem::exists(exeDir / "assets/config.vn") || std::filesystem::exists(exeDir / "config.vn")) {
+                std::filesystem::current_path(exeDir);
+                std::cout << "[Application] Adjusted working directory to: " << exeDir << std::endl;
+            } else if (std::filesystem::exists(exeDir.parent_path() / "assets/config.vn")) {
+                std::filesystem::current_path(exeDir.parent_path());
+                std::cout << "[Application] Adjusted working directory to: " << exeDir.parent_path() << std::endl;
+            }
+        }
+    } catch (...) {}
 
     // 1. Загрузка конфигурационного файла (config.vn или assets/config.vn)
     std::string configPath = resolveAsset("config.vn");
