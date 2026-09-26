@@ -65,6 +65,22 @@ add_executable(DariVN
         src/script/StoryEngine.hpp
         src/audio/AudioEngine.cpp
         src/audio/AudioEngine.hpp
+        src/states/SharedContext.hpp
+        src/states/IGameState.hpp
+        src/states/StateManager.hpp
+        src/states/StateManager.cpp
+        src/states/MainMenuState.hpp
+        src/states/MainMenuState.cpp
+        src/states/GameplayState.hpp
+        src/states/GameplayState.cpp
+        src/states/PauseMenuState.hpp
+        src/states/PauseMenuState.cpp
+        src/states/BacklogState.hpp
+        src/states/BacklogState.cpp
+        src/states/SaveLoadState.hpp
+        src/states/SaveLoadState.cpp
+        src/states/SettingsState.hpp
+        src/states/SettingsState.cpp
         external/GLAD/src/glad.c
 )
 
