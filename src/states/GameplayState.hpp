@@ -42,11 +42,18 @@ public:
     [[nodiscard]] StateType getType() const override { return StateType::Gameplay; }
 
     void updateChoiceButtons();
+    void initQuickMenuButtons();
 
 private:
     std::vector<Button> m_choiceButtons;
     glm::vec2 m_choiceWindowPos{290.0f, 160.0f};
     glm::vec2 m_choiceWindowSize{700.0f, 260.0f};
+
+    std::vector<Button> m_quickMenuButtons;
+    bool m_isSkipActive = false;
+    float m_skipTimer = 0.0f;
+    float m_skipIndicatorAnim = 0.0f;
+    bool m_isUiHidden = false;
 };
 
 #endif // DARIVN_GAMEPLAYSTATE_HPP
