@@ -40,6 +40,8 @@ public:
     void setSize(glm::vec2 size) { m_size = size; }
     void setText(std::string text) { m_text = std::move(text); }
     void setTextScale(float scale) { m_textScale = scale; }
+    void setEnabled(bool enabled) { m_enabled = enabled; }
+    [[nodiscard]] bool isEnabled() const { return m_enabled; }
 
     [[nodiscard]] bool isHovered(glm::vec2 mousePos) const {
         return mousePos.x >= m_position.x && mousePos.x <= m_position.x + m_size.x &&
@@ -54,6 +56,7 @@ private:
     std::string m_text;
     std::function<void()> m_onClick;
     bool m_hovered = false;
+    bool m_enabled = true;
     float m_textScale = 0.0f;
 
     static inline std::function<void()> s_clickCallback = nullptr;

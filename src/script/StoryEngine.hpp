@@ -152,6 +152,7 @@ public:
     [[nodiscard]] ScriptValue getVariable(const std::string& name) const;
     [[nodiscard]] const std::unordered_map<std::string, ScriptValue>& getVariables() const { return m_variables; }
     void clearVariables();
+    [[nodiscard]] static bool isPersistentVariable(std::string_view name);
 
     // История диалогов (бэклог)
     [[nodiscard]] const std::vector<DialogueLogEntry>& getDialogueHistory() const { return m_dialogueHistory; }

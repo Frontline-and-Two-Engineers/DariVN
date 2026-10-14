@@ -25,6 +25,10 @@ Button::Button(glm::vec2 position, glm::vec2 size, std::string text, std::functi
     : m_position(position), m_size(size), m_text(std::move(text)), m_onClick(std::move(onClick)) {}
 
 bool Button::update(glm::vec2 mousePos, bool mouseJustPressed) {
+    if (!m_enabled) {
+        m_hovered = false;
+        return false;
+    }
     m_hovered = isHovered(mousePos);
     if (m_hovered && mouseJustPressed && m_onClick) {
         if (s_clickCallback) s_clickCallback();
@@ -35,6 +39,33 @@ bool Button::update(glm::vec2 mousePos, bool mouseJustPressed) {
 }
 
 void Button::render(SpriteRenderer& spriteRenderer, TextRenderer& textRenderer) {
+    if (!m_enabled) {
+        // Заблокированная (disabled) кнопка: приглушенный темно-серый фон, нейтральная рамка и серый текст
+        glm::vec4 bgColor(0.09f, 0.11f, 0.15f, 0.85f);
+        spriteRenderer.drawRect(m_position, m_size, bgColor);
+
+        glm::vec4 borderColor(0.20f, 0.23f, 0.28f, 0.60f);
+        float bw = 2.0f;
+        spriteRenderer.drawRect(m_position, glm::vec2(m_size.x, bw), borderColor); // верх
+        spriteRenderer.drawRect(glm::vec2(m_position.x, m_position.y + m_size.y - bw), glm::vec2(m_size.x, bw), borderColor); // низ
+        spriteRenderer.drawRect(m_position, glm::vec2(bw, m_size.y), borderColor); // лево
+        spriteRenderer.drawRect(glm::vec2(m_position.x + m_size.x - bw, m_position.y), glm::vec2(bw, m_size.y), borderColor); // право
+
+        float scale = (m_textScale > 0.0f) ? m_textScale : 0.85f;
+        glm::vec2 textSize = textRenderer.measureText(m_text, scale);
+        float margin = (m_textScale > 0.0f) ? 8.0f : 24.0f;
+        if (textSize.x > m_size.x - margin && textSize.x > 0.0f) {
+            scale *= (m_size.x - margin) / textSize.x;
+            textSize = textRenderer.measureText(m_text, scale);
+        }
+        float textX = m_position.x + (m_size.x - textSize.x) * 0.5f;
+        float textY = m_position.y + (m_size.y - textSize.y) * 0.5f;
+
+        glm::vec4 textColor(0.48f, 0.52f, 0.58f, 0.80f);
+        textRenderer.renderText(m_text, textX, textY, scale, textColor);
+        return;
+    }
+
     // 1. Цвет фона кнопки (подсвечивается при наведении мыши)
     glm::vec4 bgColor = m_hovered 
         ? glm::vec4(0.24f, 0.32f, 0.50f, 0.95f) 

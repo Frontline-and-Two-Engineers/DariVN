@@ -52,6 +52,7 @@ struct ChoiceSaveData {
     std::string targetLabel;
     std::string targetScript;
     std::string condition;
+    bool isEnabled = true;
 };
 
 // Запись в истории диалогов
@@ -149,6 +150,15 @@ public:
     // Пути к файлам слота
     [[nodiscard]] static std::string getSlotSavePath(int slotIndex);
     [[nodiscard]] static std::string getSlotScreenshotPath(int slotIndex);
+
+    // Управление глобальными (персистентными) переменными, существующими вне сохранений
+    static bool loadPersistentData();
+    static bool savePersistentData();
+    static void setPersistentVariable(const std::string& name, const ScriptValue& val);
+    [[nodiscard]] static ScriptValue getPersistentVariable(const std::string& name);
+    [[nodiscard]] static const std::unordered_map<std::string, ScriptValue>& getPersistentVariables();
+    static void clearPersistentVariables();
+    [[nodiscard]] static std::string getPersistentFilePath();
 };
 
 #endif // DARIVN_SAVEMANAGER_HPP

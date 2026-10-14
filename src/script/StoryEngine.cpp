@@ -184,13 +184,26 @@ bool StoryEngine::loadScript(const std::string& filePath) {
     return true;
 }
 
+bool StoryEngine::isPersistentVariable(std::string_view name) {
+    if (name.starts_with('$')) name = name.substr(1);
+    return name.starts_with("persistent.") || name.starts_with("global.") ||
+           name.starts_with("persistent_") || name.starts_with("global_");
+}
+
 void StoryEngine::setVariable(const std::string& name, const ScriptValue& val) {
     std::string key = name.starts_with('$') ? name.substr(1) : name;
+    if (isPersistentVariable(key)) {
+        SaveManager::setPersistentVariable(key, val);
+        return;
+    }
     m_variables[key] = val;
 }
 
 ScriptValue StoryEngine::getVariable(const std::string& name) const {
     std::string key = name.starts_with('$') ? name.substr(1) : name;
+    if (isPersistentVariable(key)) {
+        return SaveManager::getPersistentVariable(key);
+    }
     auto it = m_variables.find(key);
     if (it != m_variables.end()) return it->second;
     return ScriptValue();
@@ -398,6 +411,7 @@ void StoryEngine::nextStep() {
 
 void StoryEngine::chooseOption(size_t index) {
     if (!m_isWaitingForChoice || index >= m_currentChoices.size()) return;
+    if (!m_currentChoices[index].isEnabled) return;
 
     ChoiceOption opt = m_currentChoices[index];
     m_isWaitingForChoice = false;
@@ -452,34 +466,34 @@ void StoryEngine::executeNextCommand() {
 
                 switch (cmd.varOp) {
                     case VariableOp::Assign:
-                        m_variables[varName] = rhs;
+                        setVariable(varName, rhs);
                         break;
                     case VariableOp::AddAssign: {
-                        auto it = m_variables.find(varName);
-                        ScriptValue cur = (it != m_variables.end()) ? it->second : ScriptValue(0.0);
-                        m_variables[varName] = cur + rhs;
+                        ScriptValue cur = getVariable(varName);
+                        if (cur.isNull()) cur = ScriptValue(0.0);
+                        setVariable(varName, cur + rhs);
                         break;
                     }
                     case VariableOp::SubAssign: {
-                        auto it = m_variables.find(varName);
-                        ScriptValue cur = (it != m_variables.end()) ? it->second : ScriptValue(0.0);
-                        m_variables[varName] = cur - rhs;
+                        ScriptValue cur = getVariable(varName);
+                        if (cur.isNull()) cur = ScriptValue(0.0);
+                        setVariable(varName, cur - rhs);
                         break;
                     }
                     case VariableOp::MulAssign: {
-                        auto it = m_variables.find(varName);
-                        ScriptValue cur = (it != m_variables.end()) ? it->second : ScriptValue(0.0);
-                        m_variables[varName] = cur * rhs;
+                        ScriptValue cur = getVariable(varName);
+                        if (cur.isNull()) cur = ScriptValue(0.0);
+                        setVariable(varName, cur * rhs);
                         break;
                     }
                     case VariableOp::DivAssign: {
-                        auto it = m_variables.find(varName);
-                        ScriptValue cur = (it != m_variables.end()) ? it->second : ScriptValue(0.0);
-                        m_variables[varName] = cur / rhs;
+                        ScriptValue cur = getVariable(varName);
+                        if (cur.isNull()) cur = ScriptValue(0.0);
+                        setVariable(varName, cur / rhs);
                         break;
                     }
                 }
-                std::cout << "[StoryEngine] Variable '" << varName << "' = " << m_variables[varName].asString() << std::endl;
+                std::cout << "[StoryEngine] Variable '" << varName << "' = " << getVariable(varName).asString() << std::endl;
                 m_currentCommandIndex++;
                 break;
             }
@@ -812,10 +826,15 @@ void StoryEngine::executeNextCommand() {
                 m_isWaitingForChoice = true;
                 m_currentChoices.clear();
                 for (const auto& rawOpt : cmd.choices) {
-                    if (!rawOpt.condition.empty() && !evaluateCondition(rawOpt.condition)) {
+                    bool conditionPassed = true;
+                    if (!rawOpt.condition.empty()) {
+                        conditionPassed = evaluateCondition(rawOpt.condition);
+                    }
+                    if (!conditionPassed && rawOpt.conditionMode == ChoiceConditionMode::Hide) {
                         continue; // Условие не выполнено — вариант скрывается
                     }
                     ChoiceOption opt = rawOpt;
+                    opt.isEnabled = conditionPassed;
                     opt.text = Localization::resolve(opt.text);
                     opt.text = interpolateVariables(opt.text);
                     m_currentChoices.push_back(std::move(opt));
@@ -852,7 +871,8 @@ void StoryEngine::captureSaveState(GameSaveState& outState) const {
             opt.text,
             opt.targetLabel,
             opt.targetScript,
-            opt.condition
+            opt.condition,
+            opt.isEnabled
         });
     }
 
@@ -955,6 +975,7 @@ bool StoryEngine::restoreSaveState(const GameSaveState& state) {
         opt.targetLabel = ch.targetLabel;
         opt.targetScript = ch.targetScript;
         opt.condition = ch.condition;
+        opt.isEnabled = ch.isEnabled;
         m_currentChoices.push_back(std::move(opt));
     }
 

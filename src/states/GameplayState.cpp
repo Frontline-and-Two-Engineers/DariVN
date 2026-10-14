@@ -169,6 +169,7 @@ void GameplayState::updateChoiceButtons() {
                 m_choiceButtons.clear();
             }
         );
+        m_choiceButtons.back().setEnabled(choices[i].isEnabled);
     }
 }
 

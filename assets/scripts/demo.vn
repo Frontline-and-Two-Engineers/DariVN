@@ -7,6 +7,7 @@
 $player_name = "Игрок"
 $points = 0
 $visited_roof = false
+$global.started_counter += 1
 
 # 1. Загрузка конфигураций персонажей из отдельных файлов (assets/characters/<id>.vn)
 load character dari
@@ -21,7 +22,10 @@ scene "assets/textures/backgrounds/classroom.jpg" with fade 1.0
 # 3. Показ персонажа со свободной позицией X Y и слоем (layer 1)
 show dari at center layer 1
 
+"Чёрт, где я?"
 dari @story.welcome
+"Кто ты?"
+"Я тут уже {$global.started_counter} раз был"
 play sound "assets/audio/sfx/bell.wav"
 dari @story.features
 dari @story.pause_demo
@@ -58,7 +62,12 @@ choice:
     @choice.roof_chapter2 -> script "assets/scripts/chapter2.vn"
     @choice.roof_now if not $visited_roof -> rooftop_direct
     @choice.shaders -> shaders_branch
+    @choice.locked_demo if $points >= 100 else disable -> secret_branch
     @choice.ending -> ending_branch
+
+label secret_branch
+dari "Поздравляю! Секретная ветка разблокирована!"
+jump ending_branch
 
 label rooftop_direct
 $visited_roof = true

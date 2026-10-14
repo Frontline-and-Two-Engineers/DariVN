@@ -311,7 +311,8 @@ std::string serializeSaveStateToJson(const GameSaveState& state) {
         ss << "      {\"text\": " << escapeJsonString(ch.text)
            << ", \"targetLabel\": " << escapeJsonString(ch.targetLabel)
            << ", \"targetScript\": " << escapeJsonString(ch.targetScript)
-           << ", \"condition\": " << escapeJsonString(ch.condition) << "}"
+           << ", \"condition\": " << escapeJsonString(ch.condition)
+           << ", \"isEnabled\": " << (ch.isEnabled ? "true" : "false") << "}"
            << (c + 1 < state.choices.size() ? ",\n" : "\n");
     }
     ss << "    ]\n";
@@ -408,6 +409,7 @@ bool deserializeJsonToSaveState(const JsonValue& root, GameSaveState& out) {
                     if (auto* tl = cVal.get("targetLabel")) cd.targetLabel = tl->asString();
                     if (auto* ts = cVal.get("targetScript")) cd.targetScript = ts->asString();
                     if (auto* cond = cVal.get("condition")) cd.condition = cond->asString();
+                    if (auto* en = cVal.get("isEnabled")) cd.isEnabled = en->asBool(true);
                     out.choices.push_back(std::move(cd));
                 }
             }
@@ -717,4 +719,124 @@ std::vector<SaveSlotMetadata> SaveManager::getSlotsMetadata(int maxSlots) {
 
 SaveSlotMetadata SaveManager::getQuickSaveMetadata() {
     return getSlotMetadata(QUICKSAVE_SLOT_INDEX);
+}
+
+static std::unordered_map<std::string, ScriptValue> s_persistentVariables;
+static bool s_persistentLoaded = false;
+
+std::string SaveManager::getPersistentFilePath() {
+    return getSaveDirectory() + "/persistent.json";
+}
+
+bool SaveManager::loadPersistentData() {
+    std::string path = getPersistentFilePath();
+    if (!std::filesystem::exists(path)) {
+        s_persistentVariables.clear();
+        s_persistentLoaded = true;
+        return true;
+    }
+
+    std::ifstream file(path);
+    if (!file.is_open()) return false;
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string content = buffer.str();
+    file.close();
+
+    size_t i = 0;
+    JsonValue root;
+    if (!parseJsonValue(content, i, root) || !root.isObject()) {
+        std::cerr << "[SaveManager] Failed to parse persistent.json" << std::endl;
+        return false;
+    }
+
+    s_persistentVariables.clear();
+    if (auto* vars = root.get("variables")) {
+        if (vars->isObject()) {
+            for (const auto& [varName, valObj] : vars->objVal) {
+                std::string typeStr;
+                if (auto* t = valObj.get("type")) typeStr = t->asString();
+                auto* v = valObj.get("val");
+                if (!v || typeStr == "null" || v->isNull()) {
+                    s_persistentVariables[varName] = ScriptValue();
+                } else if (typeStr == "bool" || v->isBool()) {
+                    s_persistentVariables[varName] = ScriptValue(v->asBool());
+                } else if (typeStr == "number" || v->isNumber()) {
+                    s_persistentVariables[varName] = ScriptValue(v->asDouble());
+                } else {
+                    s_persistentVariables[varName] = ScriptValue(v->asString());
+                }
+            }
+        }
+    }
+
+    s_persistentLoaded = true;
+    std::cout << "[SaveManager] Loaded " << s_persistentVariables.size() << " persistent variables from " << path << std::endl;
+    return true;
+}
+
+bool SaveManager::savePersistentData() {
+    try {
+        std::filesystem::create_directories(getSaveDirectory());
+    } catch (...) {}
+    std::string path = getPersistentFilePath();
+    std::ofstream file(path);
+    if (!file.is_open()) {
+        std::cerr << "[SaveManager] Failed to open " << path << " for writing" << std::endl;
+        return false;
+    }
+
+    std::ostringstream ss;
+    ss << "{\n";
+    ss << "  \"version\": 1,\n";
+    ss << "  \"variables\": {\n";
+    size_t varIdx = 0;
+    for (const auto& [varName, varVal] : s_persistentVariables) {
+        ss << "    " << escapeJsonString(varName) << ": {";
+        ss << "\"type\": ";
+        if (varVal.isNull()) ss << "\"null\", \"val\": null";
+        else if (varVal.isBool()) ss << "\"bool\", \"val\": " << (varVal.asBool() ? "true" : "false");
+        else if (varVal.isNumber()) ss << "\"number\", \"val\": " << varVal.asNumber();
+        else ss << "\"string\", \"val\": " << escapeJsonString(varVal.asString());
+        ss << "}" << (++varIdx < s_persistentVariables.size() ? ",\n" : "\n");
+    }
+    ss << "  }\n";
+    ss << "}\n";
+
+    file << ss.str();
+    return true;
+}
+
+void SaveManager::setPersistentVariable(const std::string& name, const ScriptValue& val) {
+    if (!s_persistentLoaded) {
+        loadPersistentData();
+    }
+    std::string key = name.starts_with('$') ? name.substr(1) : name;
+    s_persistentVariables[key] = val;
+    savePersistentData();
+}
+
+ScriptValue SaveManager::getPersistentVariable(const std::string& name) {
+    if (!s_persistentLoaded) {
+        loadPersistentData();
+    }
+    std::string key = name.starts_with('$') ? name.substr(1) : name;
+    auto it = s_persistentVariables.find(key);
+    if (it != s_persistentVariables.end()) {
+        return it->second;
+    }
+    return ScriptValue();
+}
+
+const std::unordered_map<std::string, ScriptValue>& SaveManager::getPersistentVariables() {
+    if (!s_persistentLoaded) {
+        loadPersistentData();
+    }
+    return s_persistentVariables;
+}
+
+void SaveManager::clearPersistentVariables() {
+    s_persistentVariables.clear();
+    savePersistentData();
 }

@@ -762,6 +762,7 @@ std::vector<ScriptCommand> ScriptParser::parseString(const std::string& content)
                 auto targetTokens = splitQuotedTokens(targetPart);
 
                 ChoiceOption opt;
+                opt.conditionMode = currentChoiceCmd.defaultChoiceMode;
                 size_t ifPos = findOutsideQuotes(optionPart, " if ");
                 std::string_view rawOptionText = optionPart;
                 if (ifPos != std::string_view::npos) {
@@ -775,8 +776,49 @@ std::vector<ScriptCommand> ScriptParser::parseString(const std::string& content)
                         if (afterQuote.starts_with("if ") || afterQuote.starts_with("if\t")) {
                             rawOptionText = trim(optionPart.substr(0, lastQ + 1));
                             opt.condition = std::string(trim(afterQuote.substr(2)));
+                        } else if (afterQuote == "(disable)" || afterQuote == "[disable]" || afterQuote == "disable" ||
+                                   afterQuote == "(lock)" || afterQuote == "[lock]" || afterQuote == "lock") {
+                            rawOptionText = trim(optionPart.substr(0, lastQ + 1));
+                            opt.conditionMode = ChoiceConditionMode::Disable;
+                            opt.condition = "false"; // Всегда неактивен
                         }
                     }
+                }
+
+                // Парсим модификаторы режима отображения условия (else disable, lock, hide и др.)
+                if (!opt.condition.empty()) {
+                    std::string condStr = std::string(trim(opt.condition));
+                    auto endsWithWord = [](std::string_view str, std::string_view suffix) -> bool {
+                        if (str.size() < suffix.size()) return false;
+                        if (str.compare(str.size() - suffix.size(), suffix.size(), suffix) != 0) return false;
+                        if (str.size() == suffix.size()) return true;
+                        char prev = str[str.size() - suffix.size() - 1];
+                        return std::isspace(static_cast<unsigned char>(prev)) || prev == ')' || prev == ']';
+                    };
+
+                    const std::vector<std::pair<std::string, ChoiceConditionMode>> modifiers = {
+                        {"else disable", ChoiceConditionMode::Disable},
+                        {"else lock", ChoiceConditionMode::Disable},
+                        {"(disable)", ChoiceConditionMode::Disable},
+                        {"[disable]", ChoiceConditionMode::Disable},
+                        {"(lock)", ChoiceConditionMode::Disable},
+                        {"[lock]", ChoiceConditionMode::Disable},
+                        {"disable", ChoiceConditionMode::Disable},
+                        {"lock", ChoiceConditionMode::Disable},
+                        {"else hide", ChoiceConditionMode::Hide},
+                        {"(hide)", ChoiceConditionMode::Hide},
+                        {"[hide]", ChoiceConditionMode::Hide},
+                        {"hide", ChoiceConditionMode::Hide}
+                    };
+
+                    for (const auto& [mod, mode] : modifiers) {
+                        if (endsWithWord(condStr, mod)) {
+                            opt.conditionMode = mode;
+                            condStr = std::string(trim(condStr.substr(0, condStr.size() - mod.size())));
+                            break;
+                        }
+                    }
+                    opt.condition = condStr;
                 }
 
                 opt.text = unquote(rawOptionText);
@@ -801,7 +843,12 @@ std::vector<ScriptCommand> ScriptParser::parseString(const std::string& content)
         // Начало блока choice:
         if (trimmed == "choice:" || trimmed.starts_with("choice")) {
             inChoiceBlock = true;
+            currentChoiceCmd = ScriptCommand();
             currentChoiceCmd.type = CommandType::Choice;
+            currentChoiceCmd.defaultChoiceMode = ChoiceConditionMode::Hide;
+            if (trimmed.find("disable") != std::string_view::npos || trimmed.find("lock") != std::string_view::npos) {
+                currentChoiceCmd.defaultChoiceMode = ChoiceConditionMode::Disable;
+            }
             continue;
         }
 

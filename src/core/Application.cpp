@@ -172,6 +172,9 @@ bool Application::init() {
     Config::setUserSettingsPath("saves/settings.vn");
     Config::loadUserSettings();
 
+    // 2.1 Загрузка персистентных глобальных переменных (между прохождениями)
+    SaveManager::loadPersistentData();
+
     int winWidth = Config::getInt("window.width", 1280);
     int winHeight = Config::getInt("window.height", 720);
     std::string winTitle = Config::getString("window.title", "DariVN - Visual Novel Engine");
@@ -603,6 +606,7 @@ void Application::render() {
 }
 
 void Application::shutdown() {
+    SaveManager::savePersistentData();
     m_characters.clear();
     m_stateManager.reset();
     m_context.reset();

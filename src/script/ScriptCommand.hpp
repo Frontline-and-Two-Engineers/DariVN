@@ -60,15 +60,23 @@ enum class CommandType {
     SetVariable       // Присваивание/модификация переменной ($var = expr, $var += expr)
 };
 
+enum class ChoiceConditionMode {
+    Hide,    // Скрывать вариант при невыполнении условия (по умолчанию)
+    Disable  // Отображать вариант серым/неактивным без возможности нажатия
+};
+
 struct ChoiceOption {
     std::string text;
     std::string targetLabel;
     std::string targetScript; // опционально: если развилка ведет в другой файл сценария
     std::string condition;    // опционально: условие доступности варианта
+    ChoiceConditionMode conditionMode = ChoiceConditionMode::Hide;
+    bool isEnabled = true;    // Доступен ли вариант для нажатия (вычисляется в runtime)
 };
 
 struct ScriptCommand {
     CommandType type = CommandType::Say;
+    ChoiceConditionMode defaultChoiceMode = ChoiceConditionMode::Hide;
     std::string characterName;
     std::string speaker;
     std::string displayName;
