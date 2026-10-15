@@ -26,10 +26,12 @@
 #include <memory>
 #include <unordered_map>
 #include <glm/glm.hpp>
+#include "script/ScriptCommand.hpp"
 
 class Texture2D;
 class SpriteRenderer;
 class TextRenderer;
+class Shader;
 
 class CharacterSprite {
 public:
@@ -80,6 +82,25 @@ public:
 
     void setSepia(float sepia) { m_sepia = sepia; }
     [[nodiscard]] float getSepia() const { return m_sepia; }
+
+    // Пользовательский шейдер для спрайта
+    void setCustomShader(std::shared_ptr<Shader> shader, const std::string& shaderId = "") {
+        m_customShader = std::move(shader);
+        m_customShaderId = shaderId;
+    }
+    void clearCustomShader() {
+        m_customShader = nullptr;
+        m_customShaderId.clear();
+        m_customUniforms.clear();
+    }
+    void setCustomUniform(const std::string& name, const ShaderUniformValue& value) {
+        m_customUniforms[name] = value;
+    }
+    void setCustomUniforms(const std::unordered_map<std::string, ShaderUniformValue>& uniforms) {
+        m_customUniforms = uniforms;
+    }
+    [[nodiscard]] const std::string& getCustomShaderId() const { return m_customShaderId; }
+    [[nodiscard]] const std::unordered_map<std::string, ShaderUniformValue>& getCustomUniforms() const { return m_customUniforms; }
 
     // Анимационные триггеры
     void shake(float duration = 0.4f, float intensity = 15.0f);
@@ -133,6 +154,12 @@ private:
     bool m_isSilhouette = false;
     glm::vec4 m_silhouetteColor = glm::vec4(0.08f, 0.09f, 0.14f, 1.0f);
     float m_sepia = 0.0f;
+
+    // Пользовательский шейдер
+    std::shared_ptr<Shader> m_customShader = nullptr;
+    std::string m_customShaderId;
+    std::unordered_map<std::string, ShaderUniformValue> m_customUniforms;
+    float m_totalTime = 0.0f;
 
     // Анимационные таймеры
     float m_flashTimer = 0.0f;

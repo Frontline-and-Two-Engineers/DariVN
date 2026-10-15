@@ -297,11 +297,32 @@ std::string serializeSaveStateToJson(const GameSaveState& state) {
     ss << "  \"previewSpeaker\": " << escapeJsonString(state.previewSpeaker) << ",\n";
     ss << "  \"previewText\": " << escapeJsonString(state.previewText) << ",\n";
 
+    auto serializeUniforms = [](const std::unordered_map<std::string, ShaderUniformValue>& uniforms) -> std::string {
+        std::stringstream ss;
+        ss << "{";
+        size_t uIdx = 0;
+        for (const auto& [uName, uVal] : uniforms) {
+            ss << escapeJsonString(uName) << ": [";
+            if (uVal.count == 0) {
+                ss << uVal.iVal;
+            } else {
+                for (int i = 0; i < uVal.count; ++i) {
+                    ss << uVal.f[i] << (i + 1 < uVal.count ? ", " : "");
+                }
+            }
+            ss << "]" << (++uIdx < uniforms.size() ? ", " : "");
+        }
+        ss << "}";
+        return ss.str();
+    };
+
     // Скрипт
     ss << "  \"script\": {\n";
     ss << "    \"path\": " << escapeJsonString(state.scriptPath) << ",\n";
     ss << "    \"commandIndex\": " << state.commandIndex << ",\n";
     ss << "    \"background\": " << escapeJsonString(state.currentBackground) << ",\n";
+    ss << "    \"backgroundShader\": " << escapeJsonString(state.currentBackgroundShader) << ",\n";
+    ss << "    \"backgroundUniforms\": " << serializeUniforms(state.currentBackgroundUniforms) << ",\n";
     ss << "    \"speaker\": " << escapeJsonString(state.currentSpeaker) << ",\n";
     ss << "    \"fullDialogue\": " << escapeJsonString(state.fullDialogueText) << ",\n";
     ss << "    \"isWaitingForChoice\": " << (state.isWaitingForChoice ? "true" : "false") << ",\n";
@@ -355,7 +376,9 @@ std::string serializeSaveStateToJson(const GameSaveState& state) {
         ss << "      \"silhouetteColor\": [" << ch.silhouetteColor.r << ", " << ch.silhouetteColor.g << ", " << ch.silhouetteColor.b << ", " << ch.silhouetteColor.a << "],\n";
         ss << "      \"sepia\": " << ch.sepia << ",\n";
         ss << "      \"scale\": " << ch.scale << ",\n";
-        ss << "      \"hasCustomScale\": " << (ch.hasCustomScale ? "true" : "false") << "\n";
+        ss << "      \"hasCustomScale\": " << (ch.hasCustomScale ? "true" : "false") << ",\n";
+        ss << "      \"customShader\": " << escapeJsonString(ch.customShaderId) << ",\n";
+        ss << "      \"customUniforms\": " << serializeUniforms(ch.customUniforms) << "\n";
         ss << "    }" << (++charIdx < state.activeCharacters.size() ? ",\n" : "\n");
     }
     ss << "  },\n";
@@ -401,10 +424,30 @@ bool deserializeJsonToSaveState(const JsonValue& root, GameSaveState& out) {
     if (auto* ps = root.get("previewSpeaker")) out.previewSpeaker = ps->asString();
     if (auto* pt = root.get("previewText")) out.previewText = pt->asString();
 
+    auto deserializeUniforms = [](const JsonValue* obj) -> std::unordered_map<std::string, ShaderUniformValue> {
+        std::unordered_map<std::string, ShaderUniformValue> res;
+        if (!obj || !obj->isObject()) return res;
+        for (const auto& [uName, uVal] : obj->objVal) {
+            if (uVal.isArray()) {
+                ShaderUniformValue val;
+                val.count = static_cast<int>(uVal.arrVal.size());
+                for (size_t i = 0; i < uVal.arrVal.size() && i < 4; ++i) {
+                    val.f[i] = uVal.arrVal[i].asFloat();
+                }
+                res[uName] = val;
+            } else if (uVal.isNumber()) {
+                res[uName] = ShaderUniformValue(uVal.asFloat());
+            }
+        }
+        return res;
+    };
+
     if (auto* sc = root.get("script")) {
         if (auto* p = sc->get("path")) out.scriptPath = p->asString();
         if (auto* ci = sc->get("commandIndex")) out.commandIndex = ci->asSizeT();
         if (auto* bg = sc->get("background")) out.currentBackground = bg->asString();
+        if (auto* bgs = sc->get("backgroundShader")) out.currentBackgroundShader = bgs->asString();
+        if (auto* bgu = sc->get("backgroundUniforms")) out.currentBackgroundUniforms = deserializeUniforms(bgu);
         if (auto* sp = sc->get("speaker")) out.currentSpeaker = sp->asString();
         if (auto* fd = sc->get("fullDialogue")) out.fullDialogueText = fd->asString();
         if (auto* w = sc->get("isWaitingForChoice")) out.isWaitingForChoice = w->asBool();
@@ -487,6 +530,8 @@ bool deserializeJsonToSaveState(const JsonValue& root, GameSaveState& out) {
                                                        sc->arrVal[3].asFloat(1.0f));
                     }
                 }
+                if (auto* csh = cObj.get("customShader")) cd.customShaderId = csh->asString();
+                if (auto* csu = cObj.get("customUniforms")) cd.customUniforms = deserializeUniforms(csu);
                 out.activeCharacters[charName] = std::move(cd);
             }
         }

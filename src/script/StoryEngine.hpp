@@ -31,6 +31,13 @@
 #include <functional>
 #include <glm/glm.hpp>
 
+struct ShaderDefinition {
+    std::string id;
+    std::string vertexPath = "assets/shaders/sprite.vert";
+    std::string fragmentPath;
+    std::unordered_map<std::string, ShaderUniformValue> defaultUniforms;
+};
+
 // Определение персонажа, созданного в сценарии
 struct CharacterDefinition {
     std::string id;
@@ -39,6 +46,7 @@ struct CharacterDefinition {
     float scale = 1.0f;
     bool hasCustomScale = false;
     bool defaultSilhouette = false;
+    std::string defaultShader; // Шейдер по умолчанию
 };
 
 // Состояние активного персонажа на сцене
@@ -56,6 +64,10 @@ struct ActiveCharacter {
     bool isSilhouette = false;
     glm::vec4 silhouetteColor = glm::vec4(0.08f, 0.09f, 0.14f, 1.0f);
     float sepia = 0.0f;
+
+    // Пользовательский шейдер персонажа
+    std::string customShaderId;
+    std::unordered_map<std::string, ShaderUniformValue> customUniforms;
 };
 
 struct CharacterAnimationEvent {
@@ -101,6 +113,9 @@ public:
     // Загрузка отдельного файла конфигурации персонажа по ID (например assets/characters/dari.vn)
     bool loadCharacterConfig(const std::string& charId, const std::string& specificPath = "");
 
+    // Загрузка отдельного файла конфигурации шейдера по ID (например assets/shaders/wave.vn)
+    bool loadShaderConfig(const std::string& shaderId, const std::string& specificPath = "");
+
     // Переключение на другой файл сценария на лету
     bool switchScript(const std::string& filePath, const std::string& targetLabel = "");
 
@@ -124,6 +139,11 @@ public:
     [[nodiscard]] const std::string& getVisibleText() const { return m_visibleDialogueText; }
     [[nodiscard]] const std::string& getCurrentBackground() const { return m_currentBackground; }
     
+    // Пользовательские шейдеры
+    [[nodiscard]] const std::unordered_map<std::string, ShaderDefinition>& getDefinedShaders() const { return m_definedShaders; }
+    [[nodiscard]] const std::string& getCurrentBackgroundShader() const { return m_currentBackgroundShader; }
+    [[nodiscard]] const std::unordered_map<std::string, ShaderUniformValue>& getCurrentBackgroundUniforms() const { return m_currentBackgroundUniforms; }
+
     // Персонажи
     [[nodiscard]] const std::unordered_map<std::string, CharacterDefinition>& getDefinedCharacters() const { return m_definedCharacters; }
     [[nodiscard]] const std::unordered_map<std::string, ActiveCharacter>& getActiveCharacters() const { return m_activeCharacters; }
@@ -205,6 +225,11 @@ private:
     std::string m_currentBackground;
     PostProcessSettings m_postProcessSettings;
     
+    // Реестр пользовательских шейдеров и шейдер фона
+    std::unordered_map<std::string, ShaderDefinition> m_definedShaders;
+    std::string m_currentBackgroundShader;
+    std::unordered_map<std::string, ShaderUniformValue> m_currentBackgroundUniforms;
+
     // Реестр персонажей и их активные слоты/слои
     std::unordered_map<std::string, CharacterDefinition> m_definedCharacters;
     std::unordered_map<std::string, ActiveCharacter> m_activeCharacters;

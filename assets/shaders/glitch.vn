@@ -1,0 +1,10 @@
+# DariVN Shader Configuration
+# Glitch / Hologram Shader
+
+id = glitch
+vertex = assets/shaders/sprite.vert
+fragment = assets/shaders/custom/glitch.frag
+
+u_Speed = 3.0
+u_Intensity = 0.04
+u_ColorOffset = 0.012

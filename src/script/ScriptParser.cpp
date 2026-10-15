@@ -335,6 +335,31 @@ static bool parseSingleCommand(std::string_view trimmed,
         }
     }
 
+    // 1.9 Пользовательский шейдер сцены через scene/bg: scene shader <id|clear> / scene shader set <param> <vals...>
+    if ((tokens[0] == "scene" || tokens[0] == "bg") && tokens.size() >= 3 && tokens[1] == "shader") {
+        cmd = ScriptCommand();
+        cmd.condition = condition;
+        if (tokens[2] == "set" && tokens.size() >= 5) {
+            cmd.type = CommandType::ShaderSetUniform;
+            cmd.characterName = "scene";
+            cmd.uniformName = tokens[3];
+            for (size_t i = 4; i < tokens.size(); ++i) {
+                if (isNumber(tokens[i])) {
+                    cmd.uniformValues.push_back(std::stof(tokens[i]));
+                }
+            }
+            return true;
+        } else if (tokens[2] == "clear" || tokens[2] == "off" || tokens[2] == "none" || tokens[2] == "reset") {
+            cmd.type = CommandType::ShaderScene;
+            cmd.shaderId = "";
+            return true;
+        } else {
+            cmd.type = CommandType::ShaderScene;
+            cmd.shaderId = tokens[2];
+            return true;
+        }
+    }
+
     // 2. Смена фона: scene <path> [with <fade|dissolve|crossfade> [duration]]
     if (tokens[0] == "scene" || tokens[0] == "bg") {
         if (tokens.size() >= 2) {
@@ -373,6 +398,18 @@ static bool parseSingleCommand(std::string_view trimmed,
         cmd = ScriptCommand();
         cmd.type = CommandType::LoadCharacter;
         cmd.characterName = tokens[2];
+        if (tokens.size() >= 4) {
+            cmd.path = tokens[3];
+        }
+        cmd.condition = condition;
+        return true;
+    }
+
+    // 2.25 Загрузка конфигурации шейдера из отдельного файла: load shader <id> [path]
+    if ((tokens[0] == "load" || tokens[0] == "import") && tokens.size() >= 3 && tokens[1] == "shader") {
+        cmd = ScriptCommand();
+        cmd.type = CommandType::LoadShader;
+        cmd.shaderId = tokens[2];
         if (tokens.size() >= 4) {
             cmd.path = tokens[3];
         }
@@ -637,6 +674,21 @@ static bool parseSingleCommand(std::string_view trimmed,
             cmd.condition = condition;
             return true;
         } else if (tokens.size() >= 3) {
+            if (tokens[2] == "shader") {
+                cmd = ScriptCommand();
+                cmd.condition = condition;
+                if (tokens.size() >= 4 && (tokens[3] == "clear" || tokens[3] == "off" || tokens[3] == "none" || tokens[3] == "reset")) {
+                    cmd.type = CommandType::ShaderCharacter;
+                    cmd.characterName = tokens[1];
+                    cmd.shaderId = "";
+                    return true;
+                } else if (tokens.size() >= 4) {
+                    cmd.type = CommandType::ShaderCharacter;
+                    cmd.characterName = tokens[1];
+                    cmd.shaderId = tokens[3];
+                    return true;
+                }
+            }
             cmd = ScriptCommand();
             cmd.type = CommandType::CharacterEffect;
             cmd.characterName = tokens[1];
@@ -650,6 +702,85 @@ static bool parseSingleCommand(std::string_view trimmed,
                 if (tokens.size() >= 7 && isNumber(tokens[6])) cmd.effectValue4 = std::stof(tokens[6]);
             }
             cmd.condition = condition;
+            return true;
+        }
+    }
+
+    // 7.5. Пользовательские шейдеры для сцены и персонажей:
+    // shader scene <id> / shader bg <id> / shader scene clear
+    // shader scene set <uniform> <vals...>
+    // shader <charId> <id> / shader <charId> clear
+    // shader <charId> set <uniform> <vals...>
+    if (tokens[0] == "shader" && tokens.size() >= 2) {
+        cmd = ScriptCommand();
+        cmd.condition = condition;
+
+        // shader set <scene|char> <uniform> <vals...>
+        if (tokens[1] == "set" && tokens.size() >= 4) {
+            cmd.type = CommandType::ShaderSetUniform;
+            cmd.characterName = (tokens[2] == "scene" || tokens[2] == "bg") ? "" : tokens[2];
+            cmd.uniformName = tokens[3];
+            for (size_t i = 4; i < tokens.size(); ++i) {
+                if (isNumber(tokens[i])) {
+                    cmd.uniformValues.push_back(std::stof(tokens[i]));
+                }
+            }
+            return true;
+        }
+
+        // shader scene ... / shader bg ...
+        if (tokens[1] == "scene" || tokens[1] == "bg") {
+            if (tokens.size() >= 3 && tokens[2] == "set" && tokens.size() >= 5) {
+                cmd.type = CommandType::ShaderSetUniform;
+                cmd.characterName = "";
+                cmd.uniformName = tokens[3];
+                for (size_t i = 4; i < tokens.size(); ++i) {
+                    if (isNumber(tokens[i])) {
+                        cmd.uniformValues.push_back(std::stof(tokens[i]));
+                    }
+                }
+                return true;
+            } else if (tokens.size() >= 3 && (tokens[2] == "clear" || tokens[2] == "off" || tokens[2] == "none" || tokens[2] == "reset")) {
+                cmd.type = CommandType::ShaderScene;
+                cmd.shaderId = "";
+                return true;
+            } else if (tokens.size() >= 3) {
+                cmd.type = CommandType::ShaderScene;
+                cmd.shaderId = tokens[2];
+                return true;
+            } else {
+                cmd.type = CommandType::ShaderScene;
+                cmd.shaderId = "";
+                return true;
+            }
+        }
+
+        // shader <charId> set <uniform> <vals...>
+        if (tokens.size() >= 4 && tokens[2] == "set") {
+            cmd.type = CommandType::ShaderSetUniform;
+            cmd.characterName = tokens[1];
+            cmd.uniformName = tokens[3];
+            for (size_t i = 4; i < tokens.size(); ++i) {
+                if (isNumber(tokens[i])) {
+                    cmd.uniformValues.push_back(std::stof(tokens[i]));
+                }
+            }
+            return true;
+        }
+
+        // shader <charId> clear/off/none/reset
+        if (tokens.size() >= 3 && (tokens[2] == "clear" || tokens[2] == "off" || tokens[2] == "none" || tokens[2] == "reset")) {
+            cmd.type = CommandType::ShaderCharacter;
+            cmd.characterName = tokens[1];
+            cmd.shaderId = "";
+            return true;
+        }
+
+        // shader <charId> <shaderId>
+        if (tokens.size() >= 3) {
+            cmd.type = CommandType::ShaderCharacter;
+            cmd.characterName = tokens[1];
+            cmd.shaderId = tokens[2];
             return true;
         }
     }

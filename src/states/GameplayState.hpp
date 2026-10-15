@@ -56,6 +56,7 @@ private:
     float m_skipIndicatorAnim = 0.0f;
     bool m_isUiHidden = false;
     DialogueMode m_lastDialogueMode = DialogueMode::ADV;
+    float m_totalTime = 0.0f;
 };
 
 #endif // DARIVN_GAMEPLAYSTATE_HPP

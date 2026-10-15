@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 #include "script/ExpressionEvaluator.hpp"
+#include "script/ScriptCommand.hpp"
 #include "renderer/RenderPipeline.hpp"
 
 // Состояние отдельного персонажа на сцене
@@ -44,6 +45,8 @@ struct CharacterSaveData {
     float sepia = 0.0f;
     float scale = 1.0f;
     bool hasCustomScale = false;
+    std::string customShaderId;
+    std::unordered_map<std::string, ShaderUniformValue> customUniforms;
 };
 
 // Состояние варианта выбора
@@ -72,6 +75,8 @@ struct GameSaveState {
     std::string scriptPath;
     size_t commandIndex = 0;
     std::string currentBackground;
+    std::string currentBackgroundShader;
+    std::unordered_map<std::string, ShaderUniformValue> currentBackgroundUniforms;
     std::string currentSpeaker;
     std::string fullDialogueText;
     bool isWaitingForChoice = false;

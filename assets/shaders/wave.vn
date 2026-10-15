@@ -1,0 +1,10 @@
+# DariVN Shader Configuration
+# Wave Distortion Shader
+
+id = wave
+vertex = assets/shaders/sprite.vert
+fragment = assets/shaders/custom/wave.frag
+
+u_Speed = 2.5
+u_Frequency = 14.0
+u_Amplitude = 0.02

@@ -297,6 +297,8 @@ void GameplayState::handleInput() {
 }
 
 void GameplayState::update(float dt) {
+    m_totalTime += dt;
+
     if (m_context.storyEngine) {
         if (m_context.storyEngine->getDialogueMode() != m_lastDialogueMode) {
             m_lastDialogueMode = m_context.storyEngine->getDialogueMode();
@@ -375,6 +377,15 @@ void GameplayState::update(float dt) {
                     character->setSilhouette(it->second.isSilhouette, it->second.silhouetteColor);
                     character->setSepia(it->second.sepia);
 
+                    // Синхронизация пользовательского шейдера персонажа
+                    if (!it->second.customShaderId.empty()) {
+                        auto sh = ResourceManager::getShader(it->second.customShaderId);
+                        character->setCustomShader(sh, it->second.customShaderId);
+                        character->setCustomUniforms(it->second.customUniforms);
+                    } else {
+                        character->clearCustomShader();
+                    }
+
                     // Опциональное приглушение не говорящих в данный момент персонажей
                     if (Config::getBool("story.auto_dim_inactive", false) && !m_context.storyEngine->getCurrentSpeaker().empty()) {
                         bool isSpeaker = (character->getDisplayName() == m_context.storyEngine->getCurrentSpeaker() || name == m_context.storyEngine->getCurrentSpeaker());
@@ -398,11 +409,23 @@ void GameplayState::render() {
 
     // 1. Игровой фон
     const std::string& bgPath = m_context.storyEngine->getCurrentBackground();
+    const std::string& bgShaderId = m_context.storyEngine->getCurrentBackgroundShader();
+    std::shared_ptr<Shader> bgCustomShader = nullptr;
+    if (!bgShaderId.empty()) {
+        bgCustomShader = ResourceManager::getShader(bgShaderId);
+    }
+    const auto& bgUniforms = m_context.storyEngine->getCurrentBackgroundUniforms();
+
     if (!bgPath.empty()) {
         std::string resolved = m_context.resolveAsset ? m_context.resolveAsset(bgPath) : bgPath;
         auto bgTex = ResourceManager::loadTexture(bgPath, resolved);
         if (bgTex) {
-            m_context.spriteRenderer->drawSprite(*bgTex, glm::vec2(0.0f, 0.0f), glm::vec2(1280.0f, 720.0f));
+            if (bgCustomShader) {
+                SpriteEffectParams params;
+                m_context.spriteRenderer->drawSprite(*bgTex, glm::vec2(0.0f, 0.0f), glm::vec2(1280.0f, 720.0f), 0.0f, params, bgCustomShader, bgUniforms, m_totalTime);
+            } else {
+                m_context.spriteRenderer->drawSprite(*bgTex, glm::vec2(0.0f, 0.0f), glm::vec2(1280.0f, 720.0f));
+            }
         } else {
             m_context.spriteRenderer->drawRect(glm::vec2(0.0f, 0.0f), glm::vec2(1280.0f, 720.0f), glm::vec4(0.11f, 0.13f, 0.20f, 1.0f));
         }

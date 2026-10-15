@@ -23,7 +23,11 @@
 #define DARIVN_SPRITERENDERER_HPP
 
 #include <memory>
+#include <unordered_map>
+#include <string>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include "script/ScriptCommand.hpp"
 
 class Shader;
 class Texture2D;
@@ -48,12 +52,25 @@ public:
     void setShader(std::shared_ptr<Shader> shader) { m_shader = std::move(shader); }
     [[nodiscard]] std::shared_ptr<Shader> getShader() const { return m_shader; }
 
+    void setProjection(const glm::mat4& projection) { m_projection = projection; }
+    [[nodiscard]] const glm::mat4& getProjection() const { return m_projection; }
+
     // Отрисовка текстурированного спрайта с расширенными эффектами
     void drawSprite(const Texture2D& texture,
                     glm::vec2 position,
                     glm::vec2 size,
                     float rotate,
                     const SpriteEffectParams& params);
+
+    // Отрисовка спрайта с пользовательским шейдером и uniform-параметрами
+    void drawSprite(const Texture2D& texture,
+                    glm::vec2 position,
+                    glm::vec2 size,
+                    float rotate,
+                    const SpriteEffectParams& params,
+                    std::shared_ptr<Shader> customShader,
+                    const std::unordered_map<std::string, ShaderUniformValue>& customUniforms = {},
+                    float totalTime = 0.0f);
 
     // Базовая отрисовка спрайта
     void drawSprite(const Texture2D& texture, 
@@ -73,6 +90,7 @@ private:
 
 private:
     std::shared_ptr<Shader> m_shader;
+    glm::mat4 m_projection = glm::ortho(0.0f, 1280.0f, 720.0f, 0.0f, -1.0f, 1.0f);
     unsigned int m_quadVAO = 0;
     unsigned int m_quadVBO = 0;
 };

@@ -1,0 +1,14 @@
+# DariVN Shader Configuration
+# Soft Painterly / Anime Background Filter
+
+id = art
+vertex = assets/shaders/sprite.vert
+fragment = assets/shaders/custom/art.frag
+
+# Параметры мягкого арта:
+u_EdgeThreshold = 0.16
+u_EdgeStrength = 0.25
+u_PosterizeSteps = 0.0
+u_Saturation = 1.15
+u_Contrast = 1.02
+u_BrushScale = 1.2

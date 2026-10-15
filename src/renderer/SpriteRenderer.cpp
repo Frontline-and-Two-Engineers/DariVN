@@ -73,9 +73,21 @@ void SpriteRenderer::drawSprite(const Texture2D& texture,
                                 glm::vec2 size, 
                                 float rotate, 
                                 const SpriteEffectParams& params) {
-    if (!m_shader || !texture.isValid()) return;
+    drawSprite(texture, position, size, rotate, params, nullptr, {}, 0.0f);
+}
 
-    m_shader->bind();
+void SpriteRenderer::drawSprite(const Texture2D& texture,
+                                glm::vec2 position,
+                                glm::vec2 size,
+                                float rotate,
+                                const SpriteEffectParams& params,
+                                std::shared_ptr<Shader> customShader,
+                                const std::unordered_map<std::string, ShaderUniformValue>& customUniforms,
+                                float totalTime) {
+    auto activeShader = customShader ? customShader : m_shader;
+    if (!activeShader || !texture.isValid()) return;
+
+    activeShader->bind();
 
     glm::mat4 model = glm::mat4(1.0f);
     // 1. Позиционирование на экране
@@ -91,19 +103,31 @@ void SpriteRenderer::drawSprite(const Texture2D& texture,
     // 3. Масштабирование по размеру
     model = glm::scale(model, glm::vec3(size, 1.0f));
 
-    m_shader->setMat4("u_Model", model);
-    m_shader->setVec4("u_Color", params.color);
-    m_shader->setInt("u_Silhouette", params.isSilhouette ? 1 : 0);
-    m_shader->setVec4("u_SilhouetteColor", params.silhouetteColor);
-    m_shader->setFloat("u_Flash", params.flash);
-    m_shader->setFloat("u_Sepia", params.sepia);
+    activeShader->setMat4("u_Projection", m_projection);
+    activeShader->setMat4("u_Model", model);
+    activeShader->setVec4("u_Color", params.color);
+    activeShader->setInt("u_Silhouette", params.isSilhouette ? 1 : 0);
+    activeShader->setVec4("u_SilhouetteColor", params.silhouetteColor);
+    activeShader->setFloat("u_Flash", params.flash);
+    activeShader->setFloat("u_Sepia", params.sepia);
+    activeShader->setFloat("u_Time", totalTime);
+    activeShader->setVec2("u_Resolution", size);
+
+    // Применяем пользовательские uniform-переменные
+    for (const auto& [uName, uVal] : customUniforms) {
+        if (uVal.count == 0) activeShader->setInt(uName, uVal.iVal);
+        else if (uVal.count == 1) activeShader->setFloat(uName, uVal.f[0]);
+        else if (uVal.count == 2) activeShader->setVec2(uName, glm::vec2(uVal.f[0], uVal.f[1]));
+        else if (uVal.count == 3) activeShader->setVec3(uName, glm::vec3(uVal.f[0], uVal.f[1], uVal.f[2]));
+        else if (uVal.count == 4) activeShader->setVec4(uName, glm::vec4(uVal.f[0], uVal.f[1], uVal.f[2], uVal.f[3]));
+    }
 
     // Включаем альфа-блендинг для прозрачности спрайтов
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     texture.bind(0);
-    m_shader->setInt("u_Texture", 0);
+    activeShader->setInt("u_Texture", 0);
 
     glBindVertexArray(m_quadVAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);

@@ -155,7 +155,8 @@ void CharacterSprite::update(float deltaTime) {
         m_alpha = std::max(m_targetAlpha, m_alpha - m_fadeSpeed * deltaTime);
     }
 
-    // 3. Обновление таймеров динамических анимаций
+    // 3. Обновление таймеров динамических анимаций и времени
+    m_totalTime += deltaTime;
     if (m_shakeTimer > 0.0f) {
         m_shakeTimer = std::max(0.0f, m_shakeTimer - deltaTime);
     }
@@ -216,7 +217,7 @@ void CharacterSprite::render(SpriteRenderer& spriteRenderer, TextRenderer& textR
             m_size.y = m_targetHeight * m_scale;
             m_size.x = m_size.y * aspect;
         }
-        spriteRenderer.drawSprite(*texture, renderPos, m_size, 0.0f, params);
+        spriteRenderer.drawSprite(*texture, renderPos, m_size, 0.0f, params, m_customShader, m_customUniforms, m_totalTime);
         return;
     }
 

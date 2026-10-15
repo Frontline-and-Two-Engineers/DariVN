@@ -13,45 +13,40 @@ $global.started_counter += 1
 load character dari
 load character shadow
 
+load shader art
+
 # Запуск фоновой музыки с плавным появлением (fade 1.5)
 play music "assets/audio/bgm/demo_theme.mp3" loop fade 1.5 volume 0.8
 
 # 2. Установка фона с плавным переходом Fade
-scene "assets/textures/backgrounds/classroom.jpg" with fade 1.0
+scene "assets/textures/backgrounds/hurzuf.png" with fade 1.0
+shader scene art
+shader scene set u_BrushScale 0.1
+shader scene set u_EdgeStrength 0.2
+shader scene set u_EdgeThreshold 0.22
+shader scene set u_Saturation 1.08
+shader scene set u_Contrast 0.8
 
 # 3. Показ персонажа со свободной позицией X Y и слоем (layer 1)
-show dari at center layer 1
+# show dari at center layer 1
 
 "Чёрт, где я?"
 dari @story.welcome
 "Кто ты?"
 "Я тут уже {$global.started_counter} раз был"
+
 nvl on
 "Воспоминания нахлынули внезапно..."
 "Зима. Обычная, ничем не примечательная зима..."
 "Я стоял на остановке в ожидании неизвестно чего..."
 dari "И тут передо мной появилась Дари, словно со страниц книги!"
 "Весь текст плавно накапливается на экране, как в Бесконечном лете."
-"Я стоял на остановке в ожидании неизвестно чего..."
-dari "И тут передо мной появилась Дари, словно со страниц книги!"
-"Весь текст плавно накапливается на экране, как в Бесконечном лете."
-"Я стоял на остановке в ожидании неизвестно чего..."
-dari "И тут передо мной появилась Дари, словно со страниц книги!"
-"Весь текст плавно накапливается на экране, как в Бесконечном лете."
-"Я стоял на остановке в ожидании неизвестно чего..."
-dari "И тут передо мной появилась Дари, словно со страниц книги!"
-"Весь текст плавно накапливается на экране, как в Бесконечном лете."
-"Я стоял на остановке в ожидании неизвестно чего..."
-dari "И тут передо мной появилась Дари, словно со страниц книги!"
-"Весь текст плавно накапливается на экране, как в Бесконечном лете."
-
-
 nvl clear
 "Новая страница воспоминаний..."
 "Когда мы очистили экран командой nvl clear, чтение продолжается с чистого листа!"
-
 nvl off
 dari "И одной командой nvl off мы вернулись к привычному нижнему диалоговому окну!"
+
 play sound "assets/audio/sfx/bell.wav"
 dari @story.features
 dari @story.pause_demo
@@ -135,6 +130,23 @@ effect blur 0.6
 dari "Команда effect blur 0.6 добавляет мягкое размытие — полезно для эффектов сна, обморока или воспоминаний."
 effect clear
 dari "А командой effect clear все пост-эффекты мгновенно сбрасываются!"
+
+# Демонстрация пользовательских шейдеров (wave и glitch)
+load shader wave
+load shader glitch
+
+shader scene wave
+dari "А теперь команда {b}shader scene wave{/b} применила процедурный шейдер волнового искажения прямо на фон класса!"
+shader scene set u_Speed 4.0
+dari "Мы можем на лету менять любые uniform-параметры шейдера командой {b}shader scene set u_Speed 4.0{/b}!"
+shader scene clear
+dari "Команда {b}shader scene clear{/b} возвращает фон в обычный режим."
+
+shader dari glitch
+dari "А команда {b}shader dari glitch{/b} применила цифровой глитч и хроматическую аберрацию прямо на мой спрайт!"
+shader dari clear
+dari "И снова вернули спрайт к обычному виду: {b}shader dari clear{/b}."
+
 dari "За изучение шейдеров начислено +10 очков!"
 dari @story.points_status
 jump ending_branch
