@@ -1,0 +1,56 @@
+# ==============================================================================
+# Сценарий второй главы: chapter2.vn
+# Демонстрация нового фона крыши, переходов сцен и мульти-сценариев
+# ==============================================================================
+
+# Загружаем персонажа из конфигурационного файла assets/characters/dari.vn
+load character dari
+
+# Запускаем фоновый шум вечернего ветра на крыше
+play ambient "assets/audio/ambient/wind.mp3" loop fade 2.0 volume 0.7
+
+# Плавный переход Fade на новый сгенерированный фон крыши на закате
+scene "assets/textures/backgrounds/rooftop.jpg" with fade 1.5
+
+show dari at center layer 1
+
+dari "Добро пожаловать во вторую главу (chapter2.vn)!"
+dari "Мы поднялись на крышу школы как раз к закату солнца!"
+dari "Слышишь, как здесь шумит вечерний ветер? Это играет наш отдельный канал Ambient!"
+dari "Посмотри на этот панорамный вид: золотые облака, силуэты небоскребов и ограждение крыши."
+dari "И персонаж Дари подгрузился автоматически из отдельного файла assets/characters/dari.vn."
+dari "Давай испытаем все типы переходов между классом и этой прекрасной крышей!"
+
+label choices_loop
+choice:
+    "Переход Dissolve (Крыша -> Класс -> Крыша)" -> dissolve_test
+    "Переход Crossfade (Крыша -> Класс -> Крыша)" -> crossfade_test
+    "Переход Fade (Крыша -> Класс -> Крыша)" -> fade_test
+    "Вернуться в первую главу (demo.vn)" -> script "assets/scripts/demo.vn"
+
+label dissolve_test
+dari "Сейчас произойдёт переход Dissolve в класс..."
+scene "assets/textures/backgrounds/classroom.jpg" with dissolve 1.5
+dari "Мы переместились в класс! Пиксельный шум стильно растворил сцену."
+dari "А теперь растворимся обратно на закатную крышу..."
+scene "assets/textures/backgrounds/rooftop.jpg" with dissolve 1.5
+dari "И мы снова любуемся закатом на крыше!"
+jump choices_loop
+
+label crossfade_test
+dari "Сейчас выполним мягкий Crossfade в класс..."
+scene "assets/textures/backgrounds/classroom.jpg" with crossfade 1.5
+dari "Плавное линейное перетекание кадров — классика визуальных новелл."
+dari "А теперь кроссфейдом вернёмся на крышу..."
+scene "assets/textures/backgrounds/rooftop.jpg" with crossfade 1.5
+dari "Очень кинематографично и мягко!"
+jump choices_loop
+
+label fade_test
+dari "Сейчас сцена уйдёт в глубокое затемнение (Fade to Black)..."
+scene "assets/textures/backgrounds/classroom.jpg" with fade 1.5
+dari "Мы в классе после затемнения."
+dari "Возвращаемся на крышу через Fade..."
+scene "assets/textures/backgrounds/rooftop.jpg" with fade 1.5
+dari "Затемнение отлично подходит для смены времени суток или потери сознания."
+jump choices_loop
