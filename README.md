@@ -116,7 +116,7 @@ DariVN/
 └── CMakeLists.txt          # CMake build configuration
 ```
 
-> 📖 **Full Documentation:** See the [`docs/`](docs/README.md) directory for comprehensive guides on writing scenarios, character setups, custom shaders, audio systems, and engine architecture.
+> 📖 **Full Documentation:** See the [`docs/`](docs/en/README.md) directory for comprehensive guides on writing scenarios, character setups, custom shaders, audio systems, and engine architecture.
 
 
 ### 🚀 Building & Running
@@ -406,7 +406,7 @@ DariVN/
 └── CMakeLists.txt          # Скрипт сборки CMake
 ```
 
-> 📖 **Полная документация:** Подробные руководства по написанию сценариев, настройке персонажей, шейдерам, звуку и конфигурации находятся в папке [`docs/`](docs/README.md).
+> 📖 **Полная документация:** Подробные руководства по написанию сценариев, настройке персонажей, шейдерам, звуку и конфигурации находятся в папке [`docs/`](docs/ru/README.md).
 
 
 ### 🚀 Сборка и запуск
