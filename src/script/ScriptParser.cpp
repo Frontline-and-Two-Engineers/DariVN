@@ -18,8 +18,10 @@
  */
 
 #include "ScriptParser.hpp"
+#include "vfs/VFS.hpp"
 
 #include <fstream>
+
 #include <sstream>
 #include <iostream>
 #include <cctype>
@@ -917,6 +919,11 @@ static bool parseSingleCommand(std::string_view trimmed,
 }
 
 std::vector<ScriptCommand> ScriptParser::parseFile(const std::string& filePath) {
+    std::string content = DariVN::VFS::readTextFile(filePath);
+    if (!content.empty()) {
+        return parseString(content);
+    }
+
     std::ifstream file(filePath);
     if (!file.is_open()) {
         std::cerr << "[ScriptParser] Failed to open script file: " << filePath << std::endl;

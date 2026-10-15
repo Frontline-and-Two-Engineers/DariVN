@@ -47,8 +47,8 @@ public:
     Application();
     ~Application();
 
-    bool init();
-    void run();
+    bool init(int argc = 0, char* argv[] = nullptr);
+    void run(int argc = 0, char* argv[] = nullptr);
     void shutdown();
 
     CharacterSprite& getOrCreateCharacter(const std::string& name);

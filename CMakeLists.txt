@@ -98,8 +98,14 @@ add_executable(DariVN
         src/states/SaveLoadState.cpp
         src/states/SettingsState.hpp
         src/states/SettingsState.cpp
+        src/vfs/Archive.hpp
+        src/vfs/Archive.cpp
+        src/vfs/VFS.hpp
+        src/vfs/VFS.cpp
         external/GLAD/src/glad.c
 )
+
+find_package(ZLIB REQUIRED)
 
 target_include_directories(DariVN PRIVATE
         src/
@@ -109,7 +115,7 @@ target_include_directories(DariVN PRIVATE
 )
 
 # 3. Линковка
-target_link_libraries(DariVN PRIVATE glfw)
+target_link_libraries(DariVN PRIVATE glfw ZLIB::ZLIB)
 
 if (APPLE)
     target_link_libraries(DariVN PRIVATE 
@@ -124,3 +130,17 @@ elseif (UNIX)
     find_package(OpenGL REQUIRED)
     target_link_libraries(DariVN PRIVATE OpenGL::GL ${CMAKE_DL_LIBS})
 endif()
+
+# 4. Утилита сборки ассетов в архивы
+add_executable(darivn-packer
+        tools/darivn-packer/main.cpp
+        src/vfs/Archive.cpp
+        src/vfs/Archive.hpp
+)
+
+target_include_directories(darivn-packer PRIVATE
+        src/
+        external/include
+)
+
+target_link_libraries(darivn-packer PRIVATE ZLIB::ZLIB)

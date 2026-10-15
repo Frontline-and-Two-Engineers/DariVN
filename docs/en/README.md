@@ -66,6 +66,12 @@ The documentation is organized into modular guides with cross-references:
    * Dialogue history window (Backlog).
    * Finite State Machine architecture (`StateManager`, `GameplayState`, `MainMenuState`, etc.).
 
+8. [**Asset Packer & VFS (`packer.md`)**](packer.md)
+   * Official `darivn-packer` CLI utility for packaging assets into `game.pak`.
+   * DEFLATE compression, end-to-end XOR encryption, and CRC32 integrity validation.
+   * Virtual File System (VFS) integration and automatic package mounting.
+   * Developer Mode (`--dev`) for hot-reloading loose disk assets during production.
+
 ---
 
 ## 🗺️ Project Architecture Overview
@@ -90,6 +96,8 @@ DariVN/
 │   └── ru/                 # Russian documentation
 ├── saves/                   # Player save files, screenshots, and persistent.json
 ├── src/                     # C++20 engine source code
+├── tools/                   # Engine companion utilities
+│   └── darivn-packer/       # Source code for asset packaging CLI tool
 └── CMakeLists.txt          # CMake build configuration
 ```
 
@@ -101,4 +109,5 @@ DariVN/
 2. Define characters in [assets/characters/](characters.md).
 3. Write your first story chapter in [assets/scripts/](scenario.md).
 4. Add atmospheric post-processing and shaders in [assets/shaders/](shaders.md).
-5. Build and launch your visual novel!
+5. Build your standalone release archive using [darivn-packer](packer.md)!
+

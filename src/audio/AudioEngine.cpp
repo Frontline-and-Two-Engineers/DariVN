@@ -21,9 +21,172 @@
 #include <miniaudio.h>
 
 #include "AudioEngine.hpp"
+#include "vfs/VFS.hpp"
 #include <iostream>
 #include <filesystem>
 #include <algorithm>
+#include <cstring>
+
+struct MiniaudioVFSHandle {
+    FILE* file = nullptr;
+    std::vector<uint8_t> data;
+    size_t cursor = 0;
+};
+
+static ma_result vfsAudioOpen(ma_vfs* pVFS, const char* pFilePath, ma_uint32 openMode, ma_vfs_file* pFile) {
+    (void)pVFS;
+    (void)openMode;
+    if (!pFilePath || !pFile) return MA_INVALID_ARGS;
+
+    auto handle = new MiniaudioVFSHandle();
+
+    // 1. Если файл существует на диске (включая dev-режим)
+    if (std::filesystem::exists(pFilePath) && std::filesystem::is_regular_file(pFilePath)) {
+        handle->file = fopen(pFilePath, "rb");
+        if (handle->file) {
+            *pFile = handle;
+            return MA_SUCCESS;
+        }
+    }
+
+    // 2. Иначе пробуем загрузить через VFS (с поиском в mounted archives и search paths)
+    handle->data = DariVN::VFS::readFile(pFilePath);
+    if (!handle->data.empty()) {
+        handle->cursor = 0;
+        *pFile = handle;
+        return MA_SUCCESS;
+    }
+
+    delete handle;
+    *pFile = NULL;
+    return MA_DOES_NOT_EXIST;
+}
+
+static ma_result vfsAudioOpenW(ma_vfs* pVFS, const wchar_t* pFilePath, ma_uint32 openMode, ma_vfs_file* pFile) {
+    (void)pVFS; (void)pFilePath; (void)openMode; (void)pFile;
+    return MA_NOT_IMPLEMENTED;
+}
+
+static ma_result vfsAudioClose(ma_vfs* pVFS, ma_vfs_file file) {
+    (void)pVFS;
+    auto* handle = static_cast<MiniaudioVFSHandle*>(file);
+    if (handle) {
+        if (handle->file) {
+            fclose(handle->file);
+            handle->file = nullptr;
+        }
+        delete handle;
+    }
+    return MA_SUCCESS;
+}
+
+static ma_result vfsAudioRead(ma_vfs* pVFS, ma_vfs_file file, void* pDst, size_t sizeInBytes, size_t* pBytesRead) {
+    (void)pVFS;
+    auto* handle = static_cast<MiniaudioVFSHandle*>(file);
+    if (!handle || !pDst) return MA_INVALID_ARGS;
+
+    if (handle->file) {
+        size_t readCount = fread(pDst, 1, sizeInBytes, handle->file);
+        if (pBytesRead) *pBytesRead = readCount;
+        return MA_SUCCESS;
+    }
+
+    if (handle->cursor >= handle->data.size()) {
+        if (pBytesRead) *pBytesRead = 0;
+        return MA_AT_END;
+    }
+
+    size_t available = handle->data.size() - handle->cursor;
+    size_t toRead = std::min(sizeInBytes, available);
+    std::memcpy(pDst, handle->data.data() + handle->cursor, toRead);
+    handle->cursor += toRead;
+    if (pBytesRead) *pBytesRead = toRead;
+    return MA_SUCCESS;
+}
+
+static ma_result vfsAudioWrite(ma_vfs* pVFS, ma_vfs_file file, const void* pSrc, size_t sizeInBytes, size_t* pBytesWritten) {
+    (void)pVFS; (void)file; (void)pSrc; (void)sizeInBytes; (void)pBytesWritten;
+    return MA_NOT_IMPLEMENTED;
+}
+
+static ma_result vfsAudioSeek(ma_vfs* pVFS, ma_vfs_file file, ma_int64 offset, ma_seek_origin origin) {
+    (void)pVFS;
+    auto* handle = static_cast<MiniaudioVFSHandle*>(file);
+    if (!handle) return MA_INVALID_ARGS;
+
+    if (handle->file) {
+        int stdOrigin = SEEK_SET;
+        if (origin == ma_seek_origin_current) stdOrigin = SEEK_CUR;
+        else if (origin == ma_seek_origin_end) stdOrigin = SEEK_END;
+        if (fseek(handle->file, static_cast<long>(offset), stdOrigin) == 0) {
+            return MA_SUCCESS;
+        }
+        return MA_ERROR;
+    }
+
+    int64_t newCursor = 0;
+    if (origin == ma_seek_origin_start) {
+        newCursor = offset;
+    } else if (origin == ma_seek_origin_current) {
+        newCursor = static_cast<int64_t>(handle->cursor) + offset;
+    } else if (origin == ma_seek_origin_end) {
+        newCursor = static_cast<int64_t>(handle->data.size()) + offset;
+    }
+
+    if (newCursor < 0 || newCursor > static_cast<int64_t>(handle->data.size())) {
+        return MA_INVALID_ARGS;
+    }
+
+    handle->cursor = static_cast<size_t>(newCursor);
+    return MA_SUCCESS;
+}
+
+static ma_result vfsAudioTell(ma_vfs* pVFS, ma_vfs_file file, ma_int64* pCursor) {
+    (void)pVFS;
+    auto* handle = static_cast<MiniaudioVFSHandle*>(file);
+    if (!handle || !pCursor) return MA_INVALID_ARGS;
+
+    if (handle->file) {
+        long pos = ftell(handle->file);
+        if (pos >= 0) {
+            *pCursor = static_cast<ma_int64>(pos);
+            return MA_SUCCESS;
+        }
+        return MA_ERROR;
+    }
+
+    *pCursor = static_cast<ma_int64>(handle->cursor);
+    return MA_SUCCESS;
+}
+
+static ma_result vfsAudioInfo(ma_vfs* pVFS, ma_vfs_file file, ma_file_info* pInfo) {
+    (void)pVFS;
+    auto* handle = static_cast<MiniaudioVFSHandle*>(file);
+    if (!handle || !pInfo) return MA_INVALID_ARGS;
+
+    if (handle->file) {
+        long cur = ftell(handle->file);
+        fseek(handle->file, 0, SEEK_END);
+        long sz = ftell(handle->file);
+        fseek(handle->file, cur, SEEK_SET);
+        pInfo->sizeInBytes = static_cast<ma_uint64>(sz);
+        return MA_SUCCESS;
+    }
+
+    pInfo->sizeInBytes = static_cast<ma_uint64>(handle->data.size());
+    return MA_SUCCESS;
+}
+
+static ma_vfs_callbacks s_audioVfsCallbacks = {
+    vfsAudioOpen,
+    vfsAudioOpenW,
+    vfsAudioClose,
+    vfsAudioRead,
+    vfsAudioWrite,
+    vfsAudioSeek,
+    vfsAudioTell,
+    vfsAudioInfo
+};
 
 struct AudioEngine::BgmTrack {
     std::unique_ptr<ma_sound> sound;
@@ -47,8 +210,11 @@ AudioEngine::~AudioEngine() {
 bool AudioEngine::init() {
     if (m_initialized) return true;
 
+    ma_engine_config engineConfig = ma_engine_config_init();
+    engineConfig.pResourceManagerVFS = &s_audioVfsCallbacks;
+
     m_engine = std::make_unique<ma_engine>();
-    ma_result result = ma_engine_init(NULL, m_engine.get());
+    ma_result result = ma_engine_init(&engineConfig, m_engine.get());
     if (result != MA_SUCCESS) {
         std::cerr << "[AudioEngine] Failed to initialize audio engine: " << result << std::endl;
         m_engine.reset();
@@ -60,6 +226,7 @@ bool AudioEngine::init() {
     std::cout << "[AudioEngine] Initialized audio engine successfully." << std::endl;
     return true;
 }
+
 
 void AudioEngine::shutdown() {
     if (!m_initialized) return;
@@ -179,7 +346,7 @@ void AudioEngine::playMusic(const std::string& filePath, bool loop, float fadeDu
         return;
     }
 
-    if (!std::filesystem::exists(filePath)) {
+    if (!std::filesystem::exists(filePath) && !DariVN::VFS::exists(filePath)) {
         std::cerr << "[AudioEngine] Music file not found: " << filePath << std::endl;
         return;
     }
@@ -329,7 +496,7 @@ const std::string& AudioEngine::getCurrentMusicPath() const {
 }
 
 void AudioEngine::playSound(const std::string& filePath, float volume) {
-    if (!m_initialized || filePath.empty() || !std::filesystem::exists(filePath)) return;
+    if (!m_initialized || filePath.empty() || (!std::filesystem::exists(filePath) && !DariVN::VFS::exists(filePath))) return;
 
     auto sfx = std::make_unique<ma_sound>();
     ma_result result = ma_sound_init_from_file(
@@ -360,7 +527,7 @@ void AudioEngine::playVoice(const std::string& filePath, float volume) {
 
     stopVoice();
 
-    if (!std::filesystem::exists(filePath)) {
+    if (!std::filesystem::exists(filePath) && !DariVN::VFS::exists(filePath)) {
         std::cerr << "[AudioEngine] Voice file not found: " << filePath << std::endl;
         return;
     }
@@ -414,7 +581,7 @@ void AudioEngine::playAmbient(const std::string& filePath, bool loop, float fade
         m_ambientSound.reset();
     }
 
-    if (!std::filesystem::exists(filePath)) {
+    if (!std::filesystem::exists(filePath) && !DariVN::VFS::exists(filePath)) {
         std::cerr << "[AudioEngine] Ambient file not found: " << filePath << std::endl;
         m_currentAmbientPath.clear();
         return;

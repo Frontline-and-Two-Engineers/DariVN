@@ -18,6 +18,7 @@
  */
 
 #include "Shader.hpp"
+#include "vfs/VFS.hpp"
 
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
@@ -25,6 +26,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+
 
 Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath) {
     loadFromFiles(vertexPath, fragmentPath);
@@ -59,6 +61,13 @@ void Shader::destroy() {
 }
 
 bool Shader::loadFromFiles(const std::string& vertexPath, const std::string& fragmentPath) {
+    std::string vSrc = DariVN::VFS::readTextFile(vertexPath);
+    std::string fSrc = DariVN::VFS::readTextFile(fragmentPath);
+
+    if (!vSrc.empty() && !fSrc.empty()) {
+        return loadFromMemory(vSrc, fSrc);
+    }
+
     std::ifstream vShaderFile(vertexPath);
     std::ifstream fShaderFile(fragmentPath);
 

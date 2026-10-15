@@ -18,6 +18,7 @@
  */
 
 #include "Localization.hpp"
+#include "vfs/VFS.hpp"
 
 #include <fstream>
 #include <sstream>
@@ -48,11 +49,20 @@ static std::string unescapeNewlines(std::string str) {
 }
 
 bool Localization::loadLocale(const std::string& langCode, const std::string& filePath) {
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "[Localization] Failed to open locale file: " << filePath << std::endl;
-        return false;
+    std::string content = DariVN::VFS::readTextFile(filePath);
+    if (content.empty()) {
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "[Localization] Failed to open locale file: " << filePath << std::endl;
+            return false;
+        }
+        std::stringstream ss;
+        ss << file.rdbuf();
+        content = ss.str();
     }
+
+    std::istringstream file(content);
+
 
     auto& dict = s_translations[langCode];
     std::string line;

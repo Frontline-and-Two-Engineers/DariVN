@@ -150,13 +150,22 @@ States share common subsystems via `SharedContext`:
 * `ResourceManager` — Central texture, font, and shader cache.
 * `StateManager` — State transition controls (Push, Pop, Change).
 
+### Virtual File System (VFS)
+All game assets are resolved through `DariVN::VFS`. It abstracts physical and packaged storage:
+* Supports reading from both physical directories and packed `.pak` archives (`game.pak` / `assets.pak`).
+* Enables zero-overhead streaming directly into GPU memory and audio decoders.
+* Features a Developer Mode (`--dev`) for hot-reloading raw disk assets during production without repacking.
+* Learn more in the [Asset Packer & VFS Guide](packer.md).
+
 ---
 
 ## Related Documentation
 
 * [Documentation Index](README.md)
+* [Asset Packer & VFS](packer.md)
 * [Writing Scenarios](scenario.md)
 * [Character Configuration](characters.md)
 * [Shaders & Special Effects](shaders.md)
 * [Engine Configuration](configuration.md)
 * [Audio System](audio.md)
+

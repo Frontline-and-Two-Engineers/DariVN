@@ -49,6 +49,9 @@ Unlike engines built on top of interpreted scripting runtimes (such as Python in
   * Full serialization of story progress, script variables, active scene background, and audio track state.
 * ⚙️ **Flexible Configuration (`config.vn`):**
   * Tweak window resolution, VSync, initial script paths, asset directories, and sound levels without recompilation.
+* 📦 **Asset Packer & Virtual File System (VFS):**
+  * Bundled CLI utility (`darivn-packer`) packages assets into `game.pak` with DEFLATE compression, CRC32 checks, and optional encryption.
+  * Instant in-memory asset streaming via VFS and Developer Mode (`--dev`) for live disk reloading.
 
 ### 📖 Script Example (`.vn`)
 
@@ -195,6 +198,9 @@ Ensure the working directory contains the `assets/` directory (or run directly f
   * Повна серіалізація стану сюжету, змінних, поточного фону та музичного треку.
 * ⚙️ **Гнучка конфігурація (`config.vn`):**
   * Налаштування роздільної здатності вікна, VSync, стартових скриптів, шляхів до ресурсів та гучності без перекомпіляції.
+* 📦 **Упаковщик асетів та віртуальна файлова система (VFS):**
+  * Вбудована консольна утиліта (`darivn-packer`) для пакування гри в `game.pak` із DEFLATE-стисненням, CRC32 та шифруванням.
+  * Миттєве завантаження ресурсів із пам'яті через VFS та режим розробника (`--dev`) для гарячого оновлення файлів на диску.
 
 ### 📖 Приклад сценарію (`.vn`)
 
@@ -340,6 +346,9 @@ cmake --build build --config Release
   * Сохранение состояния истории, значений скриптовых переменных, текущего фона и музыки.
 * ⚙️ **Гибкая конфигурация (`config.vn`):**
   * Настройка разрешения окна, VSync, стартовых скриптов, путей к ресурсам и громкости без перекомпиляции.
+* 📦 **Упаковщик ресурсов и виртуальная файловая система (VFS):**
+  * Встроенная консольная утилита (`darivn-packer`) для сборки ресурсов в `game.pak` со сжатием DEFLATE, контролем CRC32 и шифрованием.
+  * Мгновенная загрузка ассетов из памяти через VFS и режим разработчика (`--dev`) для прямого тестирования файлов с диска.
 
 ### 📖 Пример сценария (`.vn`)
 

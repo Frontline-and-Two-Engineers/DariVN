@@ -18,10 +18,12 @@
  */
 
 #include "Config.hpp"
+#include "vfs/VFS.hpp"
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+
 
 #include <filesystem>
 
@@ -45,11 +47,20 @@ static std::string unquote(std::string_view s) {
 }
 
 bool Config::load(const std::string& filePath) {
-    std::ifstream file(filePath);
-    if (!file.is_open()) {
-        std::cerr << "[Config] Could not open config file: " << filePath << std::endl;
-        return false;
+    std::string content = DariVN::VFS::readTextFile(filePath);
+    if (content.empty()) {
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "[Config] Could not open config file: " << filePath << std::endl;
+            return false;
+        }
+        std::stringstream ss;
+        ss << file.rdbuf();
+        content = ss.str();
     }
+
+    std::istringstream file(content);
+
 
     std::string line;
     int loadedCount = 0;

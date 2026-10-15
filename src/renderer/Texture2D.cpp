@@ -18,11 +18,13 @@
  */
 
 #include "Texture2D.hpp"
+#include "vfs/VFS.hpp"
 #include <glad/glad.h>
 #include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
 
 Texture2D::Texture2D(const std::string& path, bool flipVertically) {
     loadFromFile(path, flipVertically);
@@ -75,7 +77,14 @@ bool Texture2D::loadFromFile(const std::string& path, bool flipVertically) {
     stbi_set_flip_vertically_on_load(flipVertically ? 1 : 0);
 
     int width = 0, height = 0, channels = 0;
-    unsigned char* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+    unsigned char* data = nullptr;
+
+    auto vfsBuffer = DariVN::VFS::readFile(path);
+    if (!vfsBuffer.empty()) {
+        data = stbi_load_from_memory(vfsBuffer.data(), static_cast<int>(vfsBuffer.size()), &width, &height, &channels, 0);
+    } else {
+        data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+    }
 
     if (!data) {
         std::cerr << "[Texture2D] Failed to load image '" << path << "': " 

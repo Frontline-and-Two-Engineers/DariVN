@@ -20,6 +20,7 @@
 #include "TextRenderer.hpp"
 #include "Shader.hpp"
 #include "resource/ResourceManager.hpp"
+#include "vfs/VFS.hpp"
 
 #include <glad/glad.h>
 #define STB_TRUETYPE_IMPLEMENTATION
@@ -79,16 +80,8 @@ TextRenderer::~TextRenderer() {
 void TextRenderer::initRenderData() {
     std::string vertPath = "assets/shaders/text.vert";
     std::string fragPath = "assets/shaders/text.frag";
-    if (!std::filesystem::exists(vertPath)) {
-        if (std::filesystem::exists("../" + vertPath)) {
-            vertPath = "../" + vertPath;
-            fragPath = "../" + fragPath;
-        } else if (std::filesystem::exists("../../" + vertPath)) {
-            vertPath = "../../" + vertPath;
-            fragPath = "../../" + fragPath;
-        }
-    }
     m_shader = ResourceManager::loadShader("text", vertPath, fragPath);
+
 
     glGenVertexArrays(1, &m_VAO);
     glGenBuffers(1, &m_VBO);
@@ -112,20 +105,27 @@ void TextRenderer::initRenderData() {
 }
 
 bool TextRenderer::loadFont(const std::string& fontPath, float fontSize) {
-    std::ifstream file(fontPath, std::ios::binary | std::ios::ate);
-    if (!file.is_open()) {
-        std::cerr << "[TextRenderer] Failed to open font file: " << fontPath << std::endl;
-        return false;
+    std::vector<unsigned char> fontBuffer;
+    auto vfsData = DariVN::VFS::readFile(fontPath);
+    if (!vfsData.empty()) {
+        fontBuffer = std::move(vfsData);
+    } else {
+        std::ifstream file(fontPath, std::ios::binary | std::ios::ate);
+        if (!file.is_open()) {
+            std::cerr << "[TextRenderer] Failed to open font file: " << fontPath << std::endl;
+            return false;
+        }
+
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        fontBuffer.resize(size);
+        if (!file.read(reinterpret_cast<char*>(fontBuffer.data()), size)) {
+            std::cerr << "[TextRenderer] Failed to read font file: " << fontPath << std::endl;
+            return false;
+        }
     }
 
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    std::vector<unsigned char> fontBuffer(size);
-    if (!file.read(reinterpret_cast<char*>(fontBuffer.data()), size)) {
-        std::cerr << "[TextRenderer] Failed to read font file: " << fontPath << std::endl;
-        return false;
-    }
 
     m_fontSize = fontSize;
     m_lineHeight = fontSize * 1.25f;

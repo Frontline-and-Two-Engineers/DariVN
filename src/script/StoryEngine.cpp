@@ -23,7 +23,9 @@
 #include "resource/ResourceManager.hpp"
 #include "renderer/Shader.hpp"
 #include "core/SaveManager.hpp"
+#include "vfs/VFS.hpp"
 #include <iostream>
+
 #include <fstream>
 #include <sstream>
 #include <filesystem>
@@ -41,7 +43,7 @@ bool StoryEngine::loadCharacterConfig(const std::string& charId, const std::stri
         };
         for (const auto& c : candidates) {
             std::string resolved = m_assetResolver ? m_assetResolver(c) : c;
-            if (std::filesystem::exists(resolved)) {
+            if (DariVN::VFS::exists(resolved)) {
                 path = resolved;
                 break;
             }
@@ -50,17 +52,26 @@ bool StoryEngine::loadCharacterConfig(const std::string& charId, const std::stri
         path = m_assetResolver ? m_assetResolver(path) : path;
     }
 
-    if (path.empty() || !std::filesystem::exists(path)) {
-        return false;
+    std::string content = DariVN::VFS::readTextFile(path);
+    if (content.empty()) {
+        if (path.empty() || !DariVN::VFS::exists(path)) {
+            return false;
+        }
+
+        std::ifstream file(path);
+        if (!file.is_open()) {
+            return false;
+        }
+        std::stringstream ss;
+        ss << file.rdbuf();
+        content = ss.str();
     }
 
-    std::ifstream file(path);
-    if (!file.is_open()) {
-        return false;
-    }
+    std::istringstream file(content);
 
     auto& def = m_definedCharacters[charId];
     def.id = charId;
+
     if (def.displayName.empty()) def.displayName = charId;
 
     auto trimStr = [](std::string s) {
@@ -126,7 +137,7 @@ bool StoryEngine::loadShaderConfig(const std::string& shaderId, const std::strin
         };
         for (const auto& c : candidates) {
             std::string resolved = m_assetResolver ? m_assetResolver(c) : c;
-            if (std::filesystem::exists(resolved)) {
+            if (DariVN::VFS::exists(resolved)) {
                 path = resolved;
                 break;
             }
@@ -135,16 +146,25 @@ bool StoryEngine::loadShaderConfig(const std::string& shaderId, const std::strin
         path = m_assetResolver ? m_assetResolver(path) : path;
     }
 
-    if (path.empty() || !std::filesystem::exists(path)) {
-        std::cerr << "[StoryEngine] Warning: Shader config file not found for: " << shaderId << std::endl;
-        return false;
+    std::string content = DariVN::VFS::readTextFile(path);
+    if (content.empty()) {
+        if (path.empty() || !DariVN::VFS::exists(path)) {
+            std::cerr << "[StoryEngine] Warning: Shader config file not found for: " << shaderId << std::endl;
+            return false;
+        }
+
+        std::ifstream file(path);
+        if (!file.is_open()) {
+            std::cerr << "[StoryEngine] Failed to open shader config file: " << path << std::endl;
+            return false;
+        }
+        std::stringstream ss;
+        ss << file.rdbuf();
+        content = ss.str();
     }
 
-    std::ifstream file(path);
-    if (!file.is_open()) {
-        std::cerr << "[StoryEngine] Failed to open shader config file: " << path << std::endl;
-        return false;
-    }
+    std::istringstream file(content);
+
 
     auto trimStr = [](std::string s) {
         size_t s1 = s.find_first_not_of(" \t\r\n");
