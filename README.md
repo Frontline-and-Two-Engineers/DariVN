@@ -103,6 +103,7 @@ DariVN/
 │   ├── shaders/            # GLSL shader files
 │   ├── textures/           # Backgrounds, UI elements, sprites
 │   └── config.vn           # Global engine configuration
+├── docs/                   # Detailed project documentation
 ├── external/               # Third-party libraries (GLAD, GLM, stb, miniaudio)
 ├── src/                    # Engine source code
 │   ├── audio/              # Audio playback & mixer subsystem
@@ -114,6 +115,9 @@ DariVN/
 │   └── main.cpp            # Entry point
 └── CMakeLists.txt          # CMake build configuration
 ```
+
+> 📖 **Full Documentation:** See the [`docs/`](docs/README.md) directory for comprehensive guides on writing scenarios, character setups, custom shaders, audio systems, and engine architecture.
+
 
 ### 🚀 Building & Running
 
@@ -244,6 +248,7 @@ DariVN/
 │   ├── shaders/            # Шейдери GLSL
 │   ├── textures/           # Фони, спрайти, графіка UI
 │   └── config.vn           # Головний конфігураційний файл
+├── docs/                   # Детальна документація проєкту
 ├── external/               # Сторонні бібліотеки (GLAD, GLM, stb, miniaudio)
 ├── src/                    # Вихідний код рушія
 │   ├── audio/              # Підсистема аудіо
@@ -255,6 +260,9 @@ DariVN/
 │   └── main.cpp            # Точка входу
 └── CMakeLists.txt          # Скрипт збірки CMake
 ```
+
+> 📖 **Повна документація:** Дивіться каталог [`docs/`](docs/README.md) із вичерпними інструкціями щодо написання сценаріїв, конфігурації персонажів, кастомних шейдерів, аудіо та архітектури збережень.
+
 
 ### 🚀 Збірка та запуск
 
@@ -385,6 +393,7 @@ DariVN/
 │   ├── shaders/            # GLSL шейдеры
 │   ├── textures/           # Фоны, элементы интерфейса, спрайты
 │   └── config.vn           # Главный конфигурационный файл игры
+├── docs/                   # Подробная техническая документация проекта
 ├── external/               # Внешние зависимости (GLAD, GLM, stb, miniaudio)
 ├── src/                    # Исходный код движка
 │   ├── audio/              # Аудиодвижок
@@ -396,6 +405,9 @@ DariVN/
 │   └── main.cpp            # Точка входа
 └── CMakeLists.txt          # Скрипт сборки CMake
 ```
+
+> 📖 **Полная документация:** Подробные руководства по написанию сценариев, настройке персонажей, шейдерам, звуку и конфигурации находятся в папке [`docs/`](docs/README.md).
+
 
 ### 🚀 Сборка и запуск
 
