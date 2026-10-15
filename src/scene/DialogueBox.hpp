@@ -39,11 +39,24 @@ public:
     // Обновление внутренних анимаций (мигание маркера готовности перехода)
     void update(float deltaTime);
 
-    // Отрисовка диалогового окна, плашки имени, текста реплики и маркера перехода
+    // Отрисовка диалогового окна, плашки имени, текста реплики и маркера перехода (ADV)
     void render(SpriteRenderer& spriteRenderer, TextRenderer& textRenderer,
                 const std::string& speaker,
                 const std::string& text,
                 bool isWaitingForClick);
+
+    // Структура реплики в полноэкранном режиме NVL
+    struct NVLLine {
+        std::string speaker;
+        std::string text;
+    };
+
+    // Отрисовка полноэкранного режима новеллы (NVL)
+    void renderNVL(SpriteRenderer& spriteRenderer, TextRenderer& textRenderer,
+                   const std::vector<NVLLine>& nvlLines,
+                   const std::string& currentSpeaker,
+                   const std::string& currentText,
+                   bool isWaitingForClick);
 
     // Установка скина/текстуры диалогового окна
     void setSkinTexture(std::shared_ptr<Texture2D> texture) { m_skinTexture = std::move(texture); }

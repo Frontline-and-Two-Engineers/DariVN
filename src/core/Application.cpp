@@ -327,7 +327,13 @@ bool Application::init() {
         }
     });
     m_storyEngine->setTextFormatter([this](std::string_view text) {
-        return m_textRenderer->wrapText(text, m_dialogueBox->getMaxTextWidth(), m_dialogueBox->getTextScale());
+        float maxW = (m_storyEngine->getDialogueMode() == DialogueMode::NVL)
+            ? 1030.0f
+            : m_dialogueBox->getMaxTextWidth();
+        float scale = (m_storyEngine->getDialogueMode() == DialogueMode::NVL)
+            ? 0.78f
+            : m_dialogueBox->getTextScale();
+        return m_textRenderer->wrapText(text, maxW, scale);
     });
     m_storyEngine->setAnimationEventHandler([this](const std::string& charId, CharacterAnimationEvent::Type type, float p1, float p2) {
         auto it = m_characters.find(charId);

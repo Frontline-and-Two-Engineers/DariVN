@@ -152,6 +152,8 @@ bool StoryEngine::switchScript(const std::string& filePath, const std::string& t
     m_isWaitingForChoice = false;
     m_currentChoices.clear();
     m_isFinished = false;
+    m_dialogueMode = DialogueMode::ADV;
+    m_nvlLines.clear();
 
     if (m_scriptChangeHandler) {
         m_scriptChangeHandler(resolved);
@@ -293,6 +295,8 @@ void StoryEngine::reset() {
     m_isWaitingForChoice = false;
     m_currentChoices.clear();
     m_isFinished = false;
+    m_dialogueMode = DialogueMode::ADV;
+    m_nvlLines.clear();
     m_postProcessSettings.reset();
     m_variables.clear();
     m_dialogueHistory.clear();
@@ -782,9 +786,29 @@ void StoryEngine::executeNextCommand() {
                 break;
             }
 
+            case CommandType::DialogueModeChange: {
+                m_dialogueMode = cmd.dialogueMode;
+                if (m_dialogueMode == DialogueMode::ADV) {
+                    m_nvlLines.clear();
+                }
+                m_currentCommandIndex++;
+                break;
+            }
+
+            case CommandType::NVLClear: {
+                clearNVL();
+                m_currentCommandIndex++;
+                break;
+            }
+
             case CommandType::Say: {
                 if (m_audioHandler) {
                     m_audioHandler({ AudioEvent::Type::StopVoice, "", false, 0.0f, 1.0f });
+                }
+
+                // В NVL-режиме предыдущая прочитанная фраза переносится в накопленный список
+                if (m_dialogueMode == DialogueMode::NVL && !m_fullDialogueText.empty()) {
+                    m_nvlLines.push_back({m_currentSpeaker, m_fullDialogueText});
                 }
 
                 std::string speaker = cmd.speaker;
@@ -864,6 +888,11 @@ void StoryEngine::captureSaveState(GameSaveState& outState) const {
     outState.currentSpeaker = m_currentSpeaker;
     outState.fullDialogueText = m_fullDialogueText;
     outState.isWaitingForChoice = m_isWaitingForChoice;
+    outState.isNVLMode = (m_dialogueMode == DialogueMode::NVL);
+    outState.nvlLines.clear();
+    for (const auto& l : m_nvlLines) {
+        outState.nvlLines.push_back({l.speaker, l.text});
+    }
 
     outState.choices.clear();
     for (const auto& opt : m_currentChoices) {
@@ -966,6 +995,11 @@ bool StoryEngine::restoreSaveState(const GameSaveState& state) {
     m_pauseTimer = 0.0f;
     m_isWaitingForChoice = state.isWaitingForChoice;
     m_isFinished = false;
+    m_dialogueMode = state.isNVLMode ? DialogueMode::NVL : DialogueMode::ADV;
+    m_nvlLines.clear();
+    for (const auto& l : state.nvlLines) {
+        m_nvlLines.push_back({l.speaker, l.text});
+    }
 
     // 3. Восстанавливаем варианты развилки
     m_currentChoices.clear();

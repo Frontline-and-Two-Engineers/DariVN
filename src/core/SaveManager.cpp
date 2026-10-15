@@ -315,6 +315,14 @@ std::string serializeSaveStateToJson(const GameSaveState& state) {
            << ", \"isEnabled\": " << (ch.isEnabled ? "true" : "false") << "}"
            << (c + 1 < state.choices.size() ? ",\n" : "\n");
     }
+    ss << "    ],\n";
+    ss << "    \"isNVLMode\": " << (state.isNVLMode ? "true" : "false") << ",\n";
+    ss << "    \"nvlLines\": [\n";
+    for (size_t i = 0; i < state.nvlLines.size(); ++i) {
+        ss << "      {\"speaker\": " << escapeJsonString(state.nvlLines[i].speaker)
+           << ", \"text\": " << escapeJsonString(state.nvlLines[i].text) << "}"
+           << (i + 1 < state.nvlLines.size() ? ",\n" : "\n");
+    }
     ss << "    ]\n";
     ss << "  },\n";
 
@@ -411,6 +419,18 @@ bool deserializeJsonToSaveState(const JsonValue& root, GameSaveState& out) {
                     if (auto* cond = cVal.get("condition")) cd.condition = cond->asString();
                     if (auto* en = cVal.get("isEnabled")) cd.isEnabled = en->asBool(true);
                     out.choices.push_back(std::move(cd));
+                }
+            }
+        }
+        if (auto* nvl = sc->get("isNVLMode")) out.isNVLMode = nvl->asBool();
+        if (auto* nls = sc->get("nvlLines")) {
+            if (nls->isArray()) {
+                out.nvlLines.clear();
+                for (const auto& item : nls->arrVal) {
+                    DialogueHistorySaveData d;
+                    if (auto* sp = item.get("speaker")) d.speaker = sp->asString();
+                    if (auto* tx = item.get("text")) d.text = tx->asString();
+                    out.nvlLines.push_back(std::move(d));
                 }
             }
         }

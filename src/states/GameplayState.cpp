@@ -66,7 +66,8 @@ void GameplayState::initQuickMenuButtons() {
     float spacing = 8.0f;
     float totalW = 5.0f * btnW + 4.0f * spacing; // 602.0f
     float startX = 1240.0f - totalW; // 638.0f
-    float startY = 452.0f;
+    bool isNVL = (m_context.storyEngine && m_context.storyEngine->getDialogueMode() == DialogueMode::NVL);
+    float startY = isNVL ? 668.0f : 452.0f;
     float btnFontScale = 0.60f;
 
     auto addButton = [this, btnFontScale](glm::vec2 pos, glm::vec2 size, const std::string& text, std::function<void()> cb) {
@@ -297,6 +298,11 @@ void GameplayState::handleInput() {
 
 void GameplayState::update(float dt) {
     if (m_context.storyEngine) {
+        if (m_context.storyEngine->getDialogueMode() != m_lastDialogueMode) {
+            m_lastDialogueMode = m_context.storyEngine->getDialogueMode();
+            initQuickMenuButtons();
+        }
+
         // Логика режима пропуска (Skip Mode): удержание Ctrl или включенный тоггл
         bool isCtrlDown = Input::isKeyDown(GLFW_KEY_LEFT_CONTROL) || Input::isKeyDown(GLFW_KEY_RIGHT_CONTROL);
         bool isSkipping = (isCtrlDown || m_isSkipActive) && !m_context.storyEngine->isWaitingForChoice();
@@ -426,13 +432,30 @@ void GameplayState::render() {
     if (!m_isUiHidden) {
         if (m_context.dialogueBox) {
             bool isWaitingClick = m_context.storyEngine->isWaitingForNextClick();
-            m_context.dialogueBox->render(
-                *m_context.spriteRenderer,
-                *m_context.textRenderer,
-                m_context.storyEngine->getCurrentSpeaker(),
-                m_context.storyEngine->getVisibleText(),
-                isWaitingClick
-            );
+            if (m_context.storyEngine->getDialogueMode() == DialogueMode::NVL) {
+                const auto& engineNvl = m_context.storyEngine->getNVLLines();
+                std::vector<DialogueBox::NVLLine> nvlLines;
+                nvlLines.reserve(engineNvl.size());
+                for (const auto& l : engineNvl) {
+                    nvlLines.push_back({l.speaker, l.text});
+                }
+                m_context.dialogueBox->renderNVL(
+                    *m_context.spriteRenderer,
+                    *m_context.textRenderer,
+                    nvlLines,
+                    m_context.storyEngine->getCurrentSpeaker(),
+                    m_context.storyEngine->getVisibleText(),
+                    isWaitingClick
+                );
+            } else {
+                m_context.dialogueBox->render(
+                    *m_context.spriteRenderer,
+                    *m_context.textRenderer,
+                    m_context.storyEngine->getCurrentSpeaker(),
+                    m_context.storyEngine->getVisibleText(),
+                    isWaitingClick
+                );
+            }
         }
 
         // Кнопки быстрого меню (Quick Menu)
@@ -469,8 +492,8 @@ void GameplayState::render() {
             for (auto& btn : m_choiceButtons) {
                 btn.render(*m_context.spriteRenderer, *m_context.textRenderer);
             }
-        } else {
-            // Подсказка управления из локализации
+        } else if (m_context.storyEngine->getDialogueMode() != DialogueMode::NVL) {
+            // Подсказка управления из локализации (скрываем в NVL, чтобы не накладываться на кнопки быстрого меню внизу)
             m_context.textRenderer->renderText(LOC("gameplay.controls_hint"), 40.0f, 692.0f, 0.55f, glm::vec4(0.45f, 0.50f, 0.60f, 0.75f));
         }
 

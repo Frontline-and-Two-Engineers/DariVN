@@ -76,6 +76,8 @@ struct GameSaveState {
     std::string fullDialogueText;
     bool isWaitingForChoice = false;
     std::vector<ChoiceSaveData> choices;
+    bool isNVLMode = false;
+    std::vector<DialogueHistorySaveData> nvlLines;
 
     // Переменные сценария
     std::unordered_map<std::string, ScriptValue> variables;

@@ -132,6 +132,18 @@ public:
     [[nodiscard]] const std::vector<ChoiceOption>& getCurrentChoices() const { return m_currentChoices; }
     [[nodiscard]] bool isFinished() const { return m_isFinished; }
 
+    // Режим отображения диалога (ADV / NVL)
+    using NVLLine = DialogueLogEntry;
+    [[nodiscard]] DialogueMode getDialogueMode() const { return m_dialogueMode; }
+    void setDialogueMode(DialogueMode mode) { m_dialogueMode = mode; }
+    [[nodiscard]] const std::vector<NVLLine>& getNVLLines() const { return m_nvlLines; }
+    void clearNVL() {
+        m_nvlLines.clear();
+        m_fullDialogueText.clear();
+        m_visibleDialogueText.clear();
+        m_currentSpeaker.clear();
+    }
+
     [[nodiscard]] bool isTextFullyRevealed() const { return m_charByteIndex >= m_fullDialogueText.size(); }
     [[nodiscard]] bool isWaitingForNextClick() const {
         return !m_isFinished && !m_isWaitingForChoice && isTextFullyRevealed();
@@ -209,6 +221,10 @@ private:
     bool m_isWaitingForChoice = false;
     std::vector<ChoiceOption> m_currentChoices;
     bool m_isFinished = false;
+
+    // Режим диалога и накопленные реплики NVL страницы
+    DialogueMode m_dialogueMode = DialogueMode::ADV;
+    std::vector<NVLLine> m_nvlLines;
 
     // История диалогов (максимум 250 последних реплик)
     std::vector<DialogueLogEntry> m_dialogueHistory;

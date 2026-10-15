@@ -686,6 +686,65 @@ static bool parseSingleCommand(std::string_view trimmed,
         return true;
     }
 
+    // 10.5. NVL-режим (полноэкранный текст новеллы) и очистка NVL
+    if (tokens[0] == "nvl" && tokens.size() >= 2) {
+        if (tokens[1] == "clear") {
+            cmd = ScriptCommand();
+            cmd.type = CommandType::NVLClear;
+            cmd.condition = condition;
+            return true;
+        } else if (tokens[1] == "on" || tokens[1] == "show" || tokens[1] == "start") {
+            cmd = ScriptCommand();
+            cmd.type = CommandType::DialogueModeChange;
+            cmd.dialogueMode = DialogueMode::NVL;
+            cmd.condition = condition;
+            return true;
+        } else if (tokens[1] == "off" || tokens[1] == "hide" || tokens[1] == "stop") {
+            cmd = ScriptCommand();
+            cmd.type = CommandType::DialogueModeChange;
+            cmd.dialogueMode = DialogueMode::ADV;
+            cmd.condition = condition;
+            return true;
+        }
+    }
+    if (tokens[0] == "nvl" && tokens.size() == 1) {
+        cmd = ScriptCommand();
+        cmd.type = CommandType::DialogueModeChange;
+        cmd.dialogueMode = DialogueMode::NVL;
+        cmd.condition = condition;
+        return true;
+    }
+    if (tokens[0] == "mode" && tokens.size() >= 2) {
+        if (tokens[1] == "nvl") {
+            cmd = ScriptCommand();
+            cmd.type = CommandType::DialogueModeChange;
+            cmd.dialogueMode = DialogueMode::NVL;
+            cmd.condition = condition;
+            return true;
+        } else if (tokens[1] == "adv") {
+            cmd = ScriptCommand();
+            cmd.type = CommandType::DialogueModeChange;
+            cmd.dialogueMode = DialogueMode::ADV;
+            cmd.condition = condition;
+            return true;
+        }
+    }
+    if (tokens[0] == "window" && tokens.size() >= 2) {
+        if (tokens[1] == "nvl" || tokens[1] == "fullscreen") {
+            cmd = ScriptCommand();
+            cmd.type = CommandType::DialogueModeChange;
+            cmd.dialogueMode = DialogueMode::NVL;
+            cmd.condition = condition;
+            return true;
+        } else if (tokens[1] == "adv" || tokens[1] == "normal" || tokens[1] == "bottom") {
+            cmd = ScriptCommand();
+            cmd.type = CommandType::DialogueModeChange;
+            cmd.dialogueMode = DialogueMode::ADV;
+            cmd.condition = condition;
+            return true;
+        }
+    }
+
     // 11. Реплика диалога с ключом локализации без кавычек: speaker @key или @key
     if (tokens.size() == 1 && tokens[0].starts_with("@")) {
         cmd = ScriptCommand();

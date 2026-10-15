@@ -57,7 +57,14 @@ enum class CommandType {
     PlayVoice,        // Озвучка диалога (play voice <path> [volume <v>])
     PlayAmbient,      // Фоновый эмбиент (play ambient <path> [loop] [fade <s>] [volume <v>])
     StopAmbient,      // Остановка эмбиента (stop ambient [fade <s>])
-    SetVariable       // Присваивание/модификация переменной ($var = expr, $var += expr)
+    SetVariable,      // Присваивание/модификация переменной ($var = expr, $var += expr)
+    DialogueModeChange, // nvl on, nvl off, mode nvl, mode adv, window fullscreen, window adv
+    NVLClear          // nvl clear
+};
+
+enum class DialogueMode {
+    ADV, // Стандартное диалоговое окно внизу экрана
+    NVL  // Полноэкранный текстовый режим (новелла / воспоминания / мысли)
 };
 
 enum class ChoiceConditionMode {
@@ -77,6 +84,7 @@ struct ChoiceOption {
 struct ScriptCommand {
     CommandType type = CommandType::Say;
     ChoiceConditionMode defaultChoiceMode = ChoiceConditionMode::Hide;
+    DialogueMode dialogueMode = DialogueMode::ADV;
     std::string characterName;
     std::string speaker;
     std::string displayName;
