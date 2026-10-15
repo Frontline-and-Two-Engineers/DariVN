@@ -1,0 +1,9 @@
+id = artem
+name = Артём
+scale = 0.60
+
+# Эмоции персонажа и пути к текстурам
+expr.normal = "assets/textures/characters/artem/1.png"
+expr.happy = "assets/textures/characters/artem/2.png"
+expr.angry = "assets/textures/characters/artem/8.png"
+expr.shock = "assets/textures/characters/artem/6.png"
