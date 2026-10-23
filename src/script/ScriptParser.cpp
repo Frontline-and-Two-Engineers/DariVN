@@ -309,31 +309,51 @@ static bool parseSingleCommand(std::string_view trimmed,
     auto tokens = splitQuotedTokens(trimmed);
     if (tokens.empty()) return false;
 
-    // 1. Определение персонажа в сценарии:
-    if (tokens[0] == "define" && tokens.size() >= 4) {
-        if (tokens[2] == "expression" && tokens.size() >= 5) {
+    // 1. Определение персонажа или термина в сценарии:
+    if (tokens[0] == "define") {
+        if (tokens.size() >= 3 && (tokens[1] == "term" || tokens[1] == "glossary")) {
             cmd = ScriptCommand();
-            cmd.type = CommandType::DefineExpression;
-            cmd.characterName = tokens[1];
-            cmd.expression = tokens[3];
-            cmd.path = tokens[4];
-            cmd.condition = condition;
-            return true;
-        } else {
-            cmd = ScriptCommand();
-            cmd.type = CommandType::DefineCharacter;
-            cmd.characterName = tokens[1];
-            cmd.displayName = tokens[2];
-            cmd.path = tokens[3];
-            for (size_t i = 4; i < tokens.size(); ++i) {
-                if (tokens[i] == "scale" && i + 1 < tokens.size() && isNumber(tokens[i + 1])) {
-                    cmd.scale = std::stof(tokens[i + 1]);
-                    cmd.hasCustomScale = true;
-                    i++;
-                }
+            cmd.type = CommandType::DefineTerm;
+            cmd.characterName = tokens[2]; // id термина
+            if (tokens.size() >= 5) {
+                cmd.displayName = tokens[3]; // заголовок (title)
+                cmd.text = tokens[4];        // пояснение (description)
+            } else if (tokens.size() == 4) {
+                cmd.displayName = tokens[2]; // title = id
+                cmd.text = tokens[3];        // пояснение
+            } else {
+                cmd.displayName = tokens[2];
+                cmd.text = "";
             }
             cmd.condition = condition;
             return true;
+        }
+
+        if (tokens.size() >= 4) {
+            if (tokens[2] == "expression" && tokens.size() >= 5) {
+                cmd = ScriptCommand();
+                cmd.type = CommandType::DefineExpression;
+                cmd.characterName = tokens[1];
+                cmd.expression = tokens[3];
+                cmd.path = tokens[4];
+                cmd.condition = condition;
+                return true;
+            } else {
+                cmd = ScriptCommand();
+                cmd.type = CommandType::DefineCharacter;
+                cmd.characterName = tokens[1];
+                cmd.displayName = tokens[2];
+                cmd.path = tokens[3];
+                for (size_t i = 4; i < tokens.size(); ++i) {
+                    if (tokens[i] == "scale" && i + 1 < tokens.size() && isNumber(tokens[i + 1])) {
+                        cmd.scale = std::stof(tokens[i + 1]);
+                        cmd.hasCustomScale = true;
+                        i++;
+                    }
+                }
+                cmd.condition = condition;
+                return true;
+            }
         }
     }
 
@@ -414,6 +434,19 @@ static bool parseSingleCommand(std::string_view trimmed,
         cmd.shaderId = tokens[2];
         if (tokens.size() >= 4) {
             cmd.path = tokens[3];
+        }
+        cmd.condition = condition;
+        return true;
+    }
+
+    // 2.26 Загрузка словаря терминов / глоссария: load glossary [path]
+    if ((tokens[0] == "load" || tokens[0] == "import") && tokens.size() >= 2 && (tokens[1] == "glossary" || tokens[1] == "terms")) {
+        cmd = ScriptCommand();
+        cmd.type = CommandType::LoadGlossary;
+        if (tokens.size() >= 3) {
+            cmd.path = tokens[2];
+        } else {
+            cmd.path = "assets/glossary.vn";
         }
         cmd.condition = condition;
         return true;

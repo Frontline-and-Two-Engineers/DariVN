@@ -39,6 +39,9 @@ Unlike engines built on top of interpreted scripting runtimes (such as Python in
   * Vector TrueType font rendering powered by `stb_truetype`.
   * Inline markup tags: `{b}bold{/b}`, `{i}italic{/i}`, `{color=#HEX}custom colors{/color}`, `{size=...}`.
   * Automatic word wrapping and configurable typewriter text speed.
+* 💡 **Interactive Hyperlinks & Glossary System:**
+  * Embed lore explanations and footnotes using `{tip=term_id}` or `{tip='Title|Description'}`.
+  * Interactive hover glow, smooth modal popup with backdrop dimming, and standalone glossary database (`assets/glossary.vn`).
 * 🎵 **Multi-Channel Audio Engine (miniaudio):**
   * Dedicated audio buses: `Master`, `BGM`, `SFX`, `Ambient`, and `Voice`.
   * Smooth volume fades (Fade In / Fade Out) and seamless background music crossfades.
@@ -188,6 +191,9 @@ Ensure the working directory contains the `assets/` directory (or run directly f
   * Завантаження та растеризація векторних шрифтів TrueType (`stb_truetype`).
   * Теги форматування на льоту: `{b}жирний{/b}`, `{i}курсив{/i}`, `{color=#HEX}кольори{/color}`, `{size=...}`.
   * Автоматичний перенос рядків по межах слів (Word Wrapping) і налаштування швидкості друку тексту (ефект друкарської машинки).
+* 💡 **Інтерактивні гіперпосилання та база знань (глосарій):**
+  * Вставка пояснень лору та виносок через теги `{tip=term_id}` або `{tip='Заголовок|Опис'}`.
+  * Підсвітка при наведенні, плавне модальне вікно із затемненням фону та окрема база термінів (`assets/glossary.vn`).
 * 🎵 **Багатоканальний аудіорушій (miniaudio):**
   * Окремі аудіошини: `Master`, `BGM`, `SFX`, `Ambient`, `Voice`.
   * Плавне наростання й згасання звуку (Fade In / Fade Out), автоматичний кросфейд фонової музики.
@@ -336,6 +342,9 @@ cmake --build build --config Release
   * Загрузка и рендеринг векторных TrueType-шрифтов (`stb_truetype`).
   * Теги форматирования на лету: `{b}жирный{/b}`, `{i}курсив{/i}`, `{color=#HEX}кастомные цвета{/color}`, `{size=...}`.
   * Автоматический перенос строк по границам слов (Word Wrapping) с настраиваемой скоростью вывода текста (Typewriter effect).
+* 💡 **Интерактивные гиперссылки и база знаний (глоссарий):**
+  * Вставка пояснений лора и сносок через теги `{tip=term_id}` или `{tip='Заголовок|Описание'}`.
+  * Подсветка при наведении, плавное модальное окно с затемнением фона и отдельная база терминов (`assets/glossary.vn`).
 * 🎵 **Многоканальный аудиодвижок (miniaudio):**
   * Отдельные шины громкости: `Master`, `BGM`, `SFX`, `Ambient`, `Voice`.
   * Плавное нарастание и затухание (Fade In / Fade Out), автоматический кроссфейд при смене фоновой музыки.

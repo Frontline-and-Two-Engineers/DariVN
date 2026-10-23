@@ -49,6 +49,7 @@ public:
     }
 
     static void setGlobalClickCallback(std::function<void()> cb) { s_clickCallback = std::move(cb); }
+    static void invokeClickCallback() { if (s_clickCallback) s_clickCallback(); }
 
 private:
     glm::vec2 m_position;

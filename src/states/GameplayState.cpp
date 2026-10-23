@@ -198,6 +198,33 @@ void GameplayState::handleInput() {
         return;
     }
 
+    // 2.5. Обработка всплывающего окна терминов (Popup) и кликов по гиперссылкам
+    if (m_context.dialogueBox && !m_isUiHidden) {
+        if (m_context.dialogueBox->isPopupOpen()) {
+            for (auto& btn : m_quickMenuButtons) {
+                btn.update(glm::vec2(-1000.0f, -1000.0f), false);
+            }
+            for (auto& btn : m_choiceButtons) {
+                btn.update(glm::vec2(-1000.0f, -1000.0f), false);
+            }
+
+            if (mouseClicked ||
+                Input::isKeyJustPressed(GLFW_KEY_ESCAPE) ||
+                Input::isKeyJustPressed(GLFW_KEY_SPACE) ||
+                Input::isKeyJustPressed(GLFW_KEY_ENTER)) {
+                m_context.dialogueBox->closePopup();
+                Button::invokeClickCallback();
+                return;
+            }
+            return; // Блокируем дальнейший ввод пока открыт попап
+        }
+
+        // Проверяем клик или ховер по гиперссылкам в тексте
+        if (m_context.dialogueBox->handleInput(mousePos, mouseClicked)) {
+            return;
+        }
+    }
+
     // 3. Пауза по Escape
     if (Input::isKeyJustPressed(GLFW_KEY_ESCAPE)) {
         m_isSkipActive = false;
@@ -540,6 +567,11 @@ void GameplayState::render() {
             m_context.spriteRenderer->drawRect(glm::vec2(badgeX + badgeW - 2.0f, badgeY), glm::vec2(2.0f, badgeH), glm::vec4(0.95f, 0.75f, 0.20f, alpha));
 
             m_context.textRenderer->renderText(skipText, badgeX + padX, badgeY + padY + 2.0f, skipScale, glm::vec4(1.0f, 0.85f, 0.30f, alpha));
+        }
+
+        // 5. Модальное всплывающее окно термина / пояснения (всегда поверх всех кнопок и меню интерфейса)
+        if (m_context.dialogueBox) {
+            m_context.dialogueBox->renderPopup(*m_context.spriteRenderer, *m_context.textRenderer);
         }
     }
 }

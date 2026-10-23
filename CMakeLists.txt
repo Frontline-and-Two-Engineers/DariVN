@@ -67,6 +67,8 @@ add_executable(DariVN
         src/resource/ResourceManager.hpp
         src/resource/Localization.cpp
         src/resource/Localization.hpp
+        src/resource/GlossaryManager.cpp
+        src/resource/GlossaryManager.hpp
         src/scene/Button.cpp
         src/scene/Button.hpp
         src/scene/CharacterSprite.cpp

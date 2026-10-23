@@ -24,6 +24,7 @@ The documentation is organized into modular guides with cross-references:
    * Interactive choices (`choice:`) with condition checks, lock, and disable modes.
    * Scene management, shader transitions (`with fade / dissolve / crossfade`), and jumps (`label`, `jump`).
    * Procedural sprite micro-animations (`hop`, `shake`, `flash`) and smooth movement (`move`).
+   * Interactive hyperlinks `{tip=...}` and popup glossary cards (lore and terminology database).
 
 2. [**Character Configuration (`characters.md`)**](characters.md)
    * Structure and syntax of character declaration files in `assets/characters/<id>.vn`.

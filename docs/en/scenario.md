@@ -24,6 +24,7 @@ Scenarios in **DariVN** are written in plain text files with the `.vn` extension
 * [Labels & Flow Control (`label`, `jump`)](#labels--flow-control-label-jump)
 * [Audio & Music Playback](#audio--music-playback)
 * [Applying Custom Shaders](#applying-custom-shaders)
+* [Interactive Hyperlinks & Glossary Database (`{tip=...}`)](#interactive-hyperlinks--glossary-database-tip)
 * [Related Documentation](#related-documentation)
 
 ---
@@ -86,6 +87,8 @@ DariVN includes an inline rich-text markup system enclosed in curly braces `{...
 | `{w=seconds}` or `{w}` | **Typewriter pause** (defaults to 0.4s) | `"One... {w=1.0}two... {w=1.0}three!"` |
 | `{$var_name}` | **Variable interpolation** directly in text | `"Welcome, {b}{$player_name}{/b}! Points: {$points}"` |
 | `{loc=key}` | Inline localized string substitution | `"Speaker: {loc=char.dari}"` |
+| `{tip=id}...{/tip}` | **Interactive hyperlink** with popup explanation modal | `"Check out the {tip=shader}shader{/tip}!"` |
+| `{tip="Title\|Text"}...{/tip}` | Inline hyperlink with custom title and explanation | `"{tip='Relic\|Ancient artifact'}crystal{/tip}"` |
 | `{{` and `}}` | Escaped literal curly braces | `{{This is not a tag}}` |
 
 ### Formatting Example:
@@ -429,6 +432,85 @@ shader dari clear
 ```
 
 See [Shaders Guide](shaders.md) for custom shader authoring.
+
+---
+
+## Interactive Hyperlinks & Glossary Database (`{tip=...}`)
+
+DariVN features a built-in interactive hyperlink and glossary tooltip system that allows authors to embed lore explanations, term definitions, and footnotes directly into narrative dialogue.
+
+### Script Tag Syntax:
+
+1. **Referencing a term from the glossary database (`assets/glossary.vn`):**
+   ```ini
+   dari "We just learned a new GPU {tip=shader}shader{/tip} effect!"
+   "Entering the {tip=astral}astral dimension{/tip}, the hero forgot all fears."
+   ```
+   The modal title and detailed explanation are automatically populated from the glossary database.
+
+2. **Inline explanation with a custom title (using the `|` delimiter):**
+   ```ini
+   dari "Behold this {tip='Ancient Relic|A mythical crystal discovered inside forgotten ruins.'}magic stone{/tip}!"
+   ```
+
+3. **Simple inline explanation without a separate title:**
+   ```ini
+   "The hero unleashed an {tip='A devastating fire incantation dealing 100 damage.'}inferno{/tip}!"
+   ```
+   The modal title defaults to the enclosed word (`inferno`).
+
+4. **Tag Aliases:**
+   In addition to `{tip=...}`, equivalent aliases are supported: `{link=...}...{/link}`, `{glossary=...}...{/glossary}`, and `{tooltip=...}...{/tooltip}`.
+
+---
+
+### Terminology Database Format (`assets/glossary.vn`):
+
+The glossary file `assets/glossary.vn` (or `assets/terms.vn`) is automatically loaded at startup. Two flexible formats are supported:
+
+- **INI Section Format:**
+  ```ini
+  [shader]
+  title = GPU Shader
+  description = A specialized program executing on the graphics processor for real-time visual effects.
+
+  [astral]
+  title = Astral Realm
+  description = A non-physical plane of pure spiritual energy connecting parallel timelines.
+  ```
+
+- **Compact Key-Value Format:**
+  ```ini
+  magic = Magic | Supernatural force governing the primordial elements of the world.
+  alchemy = Alchemy | The ancient craft of substance transmutation and potion brewing.
+  ```
+
+---
+
+### Script Commands:
+
+- **`load glossary [path]`** (or `import glossary [path]`):
+  Loads an additional glossary file (defaults to `assets/glossary.vn`):
+  ```ini
+  load glossary "assets/lore/magic_terms.vn"
+  ```
+
+- **`define term <id> [title] <description>`**:
+  Dynamically registers or overrides a glossary term at runtime:
+  ```ini
+  define term relic "Ancient Relic" "A mythical artifact from the First Age."
+  define term mana "Spiritual energy required to cast spells."
+  ```
+
+---
+
+### Interactive Behavior & Visual Design:
+
+- **In-text Styling**: Hyperlinked words are highlighted in cyan (`#38bdf8`) with a subtle underline. Hovering over a link brightens the text to glowing cyan (`#7dd3fc`) and thickens the underline.
+- **Click Handling**: Clicking a hyperlinked word consumes the input event (dialogue will **not** advance to the next line), plays the standard UI click sound, and smoothly fades in a stylized modal card.
+- **Topmost Layering (Z-order)**: The modal window and its screen-dimming backdrop render on top of all gameplay UI elements (including Quick Menu buttons, choices, and skip indicators). Buttons underneath clear their hover state.
+- **Dismissing**: Clicking anywhere on the screen, clicking the `[✕]` button, or pressing `ESC`, `Space`, or `Enter` smoothly closes the popup without skipping dialogue or opening the pause menu.
+- **Layout Support**: Fully functional in both standard bottom chatbox (**ADV**) and full-screen novel (**NVL**) modes.
 
 ---
 

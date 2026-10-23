@@ -24,10 +24,11 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 #include <glm/glm.hpp>
+#include "renderer/TextRenderer.hpp"
 
 class SpriteRenderer;
-class TextRenderer;
 class Texture2D;
 
 class DialogueBox {
@@ -93,7 +94,31 @@ public:
     void setNameplateTextColor(glm::vec4 color) { m_nameplateTextColor = color; }
     void setNameplateBgColor(glm::vec4 color) { m_nameplateBgColor = color; }
 
+    // Структура и управление всплывающим окном пояснения (Hyperlink Tooltip Popup)
+    struct PopupData {
+        bool isOpen = false;
+        std::string title;
+        std::string description;
+        float animAlpha = 0.0f;
+        glm::vec2 pos{340.0f, 180.0f};
+        glm::vec2 size{600.0f, 320.0f};
+        glm::vec4 closeButtonRect{0.0f};
+    };
+
+    void openPopup(const std::string& title, const std::string& description);
+    void closePopup();
+    [[nodiscard]] bool isPopupOpen() const { return m_popup.isOpen; }
+
+    // Обработка ввода (ховер по гиперссылкам, клик для открытия попапа, закрытие попапа)
+    bool handleInput(glm::vec2 mousePos, bool mouseClicked);
+
+    // Отрисовка активного всплывающего окна
+    void renderPopup(SpriteRenderer& spriteRenderer, TextRenderer& textRenderer);
+
 private:
+    PopupData m_popup;
+    std::string m_hoveredLinkKey;
+    std::vector<TextLinkHitBox> m_activeLinks;
     glm::vec2 m_position;
     glm::vec2 m_size;
     glm::vec2 m_textPadding{45.0f, 38.0f};

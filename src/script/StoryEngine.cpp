@@ -21,6 +21,7 @@
 #include "ScriptParser.hpp"
 #include "resource/Localization.hpp"
 #include "resource/ResourceManager.hpp"
+#include "resource/GlossaryManager.hpp"
 #include "renderer/Shader.hpp"
 #include "core/SaveManager.hpp"
 #include "vfs/VFS.hpp"
@@ -563,11 +564,16 @@ void StoryEngine::chooseOption(size_t index) {
     }
 
     std::string target = opt.targetLabel;
-    auto it = m_labelIndices.find(target);
-    if (it != m_labelIndices.end()) {
-        m_currentCommandIndex = it->second + 1;
+    if (target.empty() || target == "continue" || target == "next") {
+        m_currentCommandIndex++;
     } else {
-        std::cerr << "[StoryEngine] Warning: label '" << target << "' not found!" << std::endl;
+        auto it = m_labelIndices.find(target);
+        if (it != m_labelIndices.end()) {
+            m_currentCommandIndex = it->second + 1;
+        } else {
+            std::cerr << "[StoryEngine] Warning: label '" << target << "' not found!" << std::endl;
+            m_currentCommandIndex++;
+        }
     }
 
     executeNextCommand();
@@ -1001,6 +1007,23 @@ void StoryEngine::executeNextCommand() {
                         it->second.customUniforms[cmd.uniformName] = val;
                     }
                 }
+                m_currentCommandIndex++;
+                break;
+            }
+
+            case CommandType::LoadGlossary: {
+                std::string path = cmd.path.empty() ? "assets/glossary.vn" : cmd.path;
+                std::string resolved = m_assetResolver ? m_assetResolver(path) : path;
+                GlossaryManager::loadFromFile(resolved);
+                m_currentCommandIndex++;
+                break;
+            }
+
+            case CommandType::DefineTerm: {
+                std::string termId = cmd.characterName;
+                std::string title = cmd.displayName.empty() ? termId : cmd.displayName;
+                std::string desc = cmd.text;
+                GlossaryManager::addTerm(termId, title, desc);
                 m_currentCommandIndex++;
                 break;
             }

@@ -63,7 +63,9 @@ enum class CommandType {
     LoadShader,       // load shader <id> [path]
     ShaderScene,      // shader scene <id> / shader bg <id> (или clear)
     ShaderCharacter,  // shader <character_id> <id> (или clear)
-    ShaderSetUniform  // shader set scene <uniform> <values...> / shader <char> set <uniform> <values...>
+    ShaderSetUniform, // shader set scene <uniform> <values...> / shader <char> set <uniform> <values...>
+    LoadGlossary,     // load glossary [path]
+    DefineTerm        // define term <id> <title> <description>
 };
 
 struct ShaderUniformValue {

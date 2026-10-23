@@ -18,12 +18,15 @@
  */
 
 #include "DialogueBox.hpp"
+#include "Button.hpp"
+#include "core/Input.hpp"
 #include "renderer/SpriteRenderer.hpp"
 #include "renderer/TextRenderer.hpp"
 #include "renderer/Texture2D.hpp"
 #include "resource/ResourceManager.hpp"
 
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <cmath>
 #include <algorithm>
 
@@ -41,6 +44,11 @@ void DialogueBox::setNameplateSkinTexture(const std::string& texturePath) {
 void DialogueBox::update(float deltaTime) {
     m_blinkTimer += deltaTime;
     m_bounceOffset = std::sin(m_blinkTimer * 5.0f) * 3.0f;
+    if (m_popup.isOpen) {
+        m_popup.animAlpha = std::min(1.0f, m_popup.animAlpha + deltaTime * 8.0f);
+    } else {
+        m_popup.animAlpha = std::max(0.0f, m_popup.animAlpha - deltaTime * 10.0f);
+    }
 }
 
 void DialogueBox::render(SpriteRenderer& spriteRenderer, TextRenderer& textRenderer,
@@ -92,7 +100,6 @@ void DialogueBox::render(SpriteRenderer& spriteRenderer, TextRenderer& textRende
     }
 
     // -------------------------------------------------------------
-    // -------------------------------------------------------------
     // 3. Текст реплики диалога
     // -------------------------------------------------------------
     if (!text.empty()) {
@@ -118,9 +125,26 @@ void DialogueBox::render(SpriteRenderer& spriteRenderer, TextRenderer& textRende
         glEnable(GL_SCISSOR_TEST);
         glScissor(scissorX, scissorY, scissorW, scissorH);
 
+        textRenderer.clearRenderedLinks();
+        textRenderer.setHoveredLink(m_hoveredLinkKey);
+
         float textX = m_position.x + m_textPadding.x;
         float textY = m_position.y + m_textPadding.y;
         textRenderer.renderText(text, textX, textY, m_textScale, m_textColor);
+
+        m_activeLinks = textRenderer.getRenderedLinks();
+
+        // Отрисовка подчеркиваний ссылок (внутри scissor)
+        for (const auto& link : m_activeLinks) {
+            for (const auto& r : link.rects) {
+                float lineY = r.y + r.w - 1.0f;
+                float lineH = link.isHovered ? 2.5f : 1.5f;
+                glm::vec4 lineCol = link.isHovered
+                    ? glm::vec4(0.49f, 0.86f, 1.0f, 0.95f)
+                    : glm::vec4(0.22f, 0.74f, 0.97f, 0.70f);
+                spriteRenderer.drawRect(glm::vec2(r.x, lineY), glm::vec2(r.z, lineH), lineCol);
+            }
+        }
 
         if (!wasScissor) {
             glDisable(GL_SCISSOR_TEST);
@@ -243,6 +267,9 @@ void DialogueBox::renderNVL(SpriteRenderer& spriteRenderer, TextRenderer& textRe
     glEnable(GL_SCISSOR_TEST);
     glScissor(scissorX, scissorY, scissorW, scissorH);
 
+    textRenderer.clearRenderedLinks();
+    textRenderer.setHoveredLink(m_hoveredLinkKey);
+
     // Рендерим предыдущие прочитанные реплики страницы
     for (const auto& line : nvlLines) {
         int lc = 1;
@@ -284,6 +311,20 @@ void DialogueBox::renderNVL(SpriteRenderer& spriteRenderer, TextRenderer& textRe
         lastLineEndY = currentY + textH;
     }
 
+    m_activeLinks = textRenderer.getRenderedLinks();
+
+    // Отрисовка подчеркиваний ссылок (внутри scissor)
+    for (const auto& link : m_activeLinks) {
+        for (const auto& r : link.rects) {
+            float lineY = r.y + r.w - 1.0f;
+            float lineH = link.isHovered ? 2.5f : 1.5f;
+            glm::vec4 lineCol = link.isHovered
+                ? glm::vec4(0.49f, 0.86f, 1.0f, 0.95f)
+                : glm::vec4(0.22f, 0.74f, 0.97f, 0.70f);
+            spriteRenderer.drawRect(glm::vec2(r.x, lineY), glm::vec2(r.z, lineH), lineCol);
+        }
+    }
+
     // 4. Индикатор завершения текущей реплики (ожидание клика игрока)
     if (isWaitingForClick) {
         float alpha = 0.45f + 0.55f * std::max(0.0f, std::sin(m_blinkTimer * 5.0f));
@@ -310,4 +351,187 @@ void DialogueBox::renderNVL(SpriteRenderer& spriteRenderer, TextRenderer& textRe
     } else {
         glScissor(prevScissor[0], prevScissor[1], prevScissor[2], prevScissor[3]);
     }
+}
+
+void DialogueBox::openPopup(const std::string& title, const std::string& description) {
+    m_popup.isOpen = true;
+    m_popup.title = title.empty() ? "ПОЯСНЕНИЕ" : title;
+    m_popup.description = description;
+}
+
+void DialogueBox::closePopup() {
+    m_popup.isOpen = false;
+}
+
+bool DialogueBox::handleInput(glm::vec2 mousePos, bool mouseClicked) {
+    if (m_popup.isOpen) {
+        if (mouseClicked) {
+            closePopup();
+            Button::invokeClickCallback();
+            return true;
+        }
+        return true;
+    }
+
+    std::string newHoveredKey;
+    const TextLinkHitBox* clickedLink = nullptr;
+
+    for (const auto& link : m_activeLinks) {
+        bool hit = false;
+        for (const auto& r : link.rects) {
+            if (mousePos.x >= r.x && mousePos.x <= r.x + r.z &&
+                mousePos.y >= r.y && mousePos.y <= r.y + r.w) {
+                hit = true;
+                break;
+            }
+        }
+        if (hit) {
+            newHoveredKey = link.tagParam;
+            if (mouseClicked) {
+                clickedLink = &link;
+            }
+            break;
+        }
+    }
+
+    m_hoveredLinkKey = newHoveredKey;
+
+    if (clickedLink) {
+        openPopup(clickedLink->title, clickedLink->description);
+        Button::invokeClickCallback();
+        return true;
+    }
+
+    return false;
+}
+
+void DialogueBox::renderPopup(SpriteRenderer& spriteRenderer, TextRenderer& textRenderer) {
+    float alpha = m_popup.animAlpha;
+    if (alpha <= 0.001f) return;
+
+    // 1. Полноэкранное затемнение фона с плавным альфа-переходом
+    spriteRenderer.drawRect(glm::vec2(0.0f, 0.0f), glm::vec2(1280.0f, 720.0f), glm::vec4(0.0f, 0.0f, 0.0f, 0.65f * alpha));
+
+    // Параметры карточки термина
+    float popW = 660.0f;
+    float maxTextW = popW - 60.0f;
+    float descScale = 0.76f;
+    float descLineH = textRenderer.getLineHeight() * descScale + 4.0f;
+
+    // Автоматический перенос текста описания
+    std::string wrappedDesc = textRenderer.wrapText(m_popup.description, maxTextW, descScale);
+    int descLines = 1;
+    for (char c : wrappedDesc) {
+        if (c == '\n') descLines++;
+    }
+
+    float headerH = 54.0f;
+    float footerH = 44.0f;
+    float contentH = static_cast<float>(descLines) * descLineH + 30.0f;
+    float popH = std::max(220.0f, std::min(580.0f, headerH + contentH + footerH));
+
+    float popX = (1280.0f - popW) * 0.5f;
+    float popY = (720.0f - popH) * 0.5f;
+    m_popup.pos = glm::vec2(popX, popY);
+    m_popup.size = glm::vec2(popW, popH);
+
+    // 2. Мягкая тень карточки (эффект объема)
+    spriteRenderer.drawRect(
+        glm::vec2(popX + 6.0f, popY + 8.0f),
+        glm::vec2(popW, popH),
+        glm::vec4(0.0f, 0.0f, 0.0f, 0.45f * alpha)
+    );
+
+    // 3. Основной фон карточки
+    glm::vec4 cardBg(0.06f, 0.08f, 0.12f, 0.96f * alpha);
+    spriteRenderer.drawRect(glm::vec2(popX, popY), glm::vec2(popW, popH), cardBg);
+
+    // 4. Стильная неоновая рамка карточки
+    glm::vec4 borderCol(0.22f, 0.74f, 0.97f, 0.85f * alpha); // Cyan neon
+    float bw = 2.0f;
+    spriteRenderer.drawRect(glm::vec2(popX, popY), glm::vec2(popW, bw), borderCol); // верх
+    spriteRenderer.drawRect(glm::vec2(popX, popY + popH - bw), glm::vec2(popW, bw), borderCol * 0.75f); // низ
+    spriteRenderer.drawRect(glm::vec2(popX, popY), glm::vec2(bw, popH), borderCol * 0.6f); // лево
+    spriteRenderer.drawRect(glm::vec2(popX + popW - bw, popY), glm::vec2(bw, popH), borderCol * 0.6f); // право
+
+    // Верхний светящийся штрих
+    spriteRenderer.drawRect(
+        glm::vec2(popX + 40.0f, popY),
+        glm::vec2(popW - 80.0f, 3.0f),
+        glm::vec4(0.49f, 0.86f, 1.0f, 0.95f * alpha)
+    );
+
+    // 5. Заголовочная панель карточки
+    // Бейдж: [ ТЕРМИН ]
+    float badgeX = popX + 24.0f;
+    float badgeY = popY + 16.0f;
+    float badgeW = 90.0f;
+    float badgeH = 22.0f;
+    spriteRenderer.drawRect(glm::vec2(badgeX, badgeY), glm::vec2(badgeW, badgeH), glm::vec4(0.12f, 0.28f, 0.45f, 0.85f * alpha));
+    spriteRenderer.drawRect(glm::vec2(badgeX, badgeY), glm::vec2(badgeW, 1.5f), glm::vec4(0.38f, 0.82f, 1.0f, 0.95f * alpha));
+
+    float badgeScale = 0.52f;
+    glm::vec2 badgeTextSz = textRenderer.measureText("ТЕРМИН", badgeScale);
+    textRenderer.renderText(
+        "ТЕРМИН",
+        badgeX + (badgeW - badgeTextSz.x) * 0.5f,
+        badgeY + (badgeH - badgeTextSz.y) * 0.5f,
+        badgeScale,
+        glm::vec4(0.70f, 0.92f, 1.0f, alpha)
+    );
+
+    // Заголовок термина
+    float titleX = badgeX + badgeW + 14.0f;
+    float titleY = popY + 14.0f;
+    float titleScale = 0.88f;
+    textRenderer.renderText(m_popup.title, titleX, titleY, titleScale, glm::vec4(1.0f, 0.95f, 0.80f, alpha));
+
+    // Кнопка закрытия [✕]
+    float btnSize = 28.0f;
+    float btnX = popX + popW - btnSize - 18.0f;
+    float btnY = popY + 12.0f;
+    m_popup.closeButtonRect = glm::vec4(btnX, btnY, btnSize, btnSize);
+
+    glm::vec2 mousePos = Input::getMousePosition();
+    bool btnHovered = (mousePos.x >= btnX && mousePos.x <= btnX + btnSize &&
+                       mousePos.y >= btnY && mousePos.y <= btnY + btnSize);
+
+    glm::vec4 closeBtnBg = btnHovered
+        ? glm::vec4(0.85f, 0.25f, 0.25f, 0.85f * alpha)
+        : glm::vec4(0.20f, 0.25f, 0.35f, 0.50f * alpha);
+    spriteRenderer.drawRect(glm::vec2(btnX, btnY), glm::vec2(btnSize, btnSize), closeBtnBg);
+
+    glm::vec2 closeTxtSz = textRenderer.measureText("✕", 0.75f);
+    textRenderer.renderText(
+        "✕",
+        btnX + (btnSize - closeTxtSz.x) * 0.5f,
+        btnY + (btnSize - closeTxtSz.y) * 0.5f,
+        0.75f,
+        btnHovered ? glm::vec4(1.0f, 1.0f, 1.0f, alpha) : glm::vec4(0.80f, 0.85f, 0.95f, 0.90f * alpha)
+    );
+
+    // Разделительная черта под заголовком
+    spriteRenderer.drawRect(
+        glm::vec2(popX + 20.0f, popY + headerH),
+        glm::vec2(popW - 40.0f, 1.5f),
+        glm::vec4(0.25f, 0.40f, 0.60f, 0.45f * alpha)
+    );
+
+    // 6. Текст описания
+    float bodyX = popX + 28.0f;
+    float bodyY = popY + headerH + 18.0f;
+    textRenderer.renderText(wrappedDesc, bodyX, bodyY, descScale, glm::vec4(0.92f, 0.94f, 0.98f, alpha));
+
+    // 7. Нижняя подсказка для игрока
+    float hintY = popY + popH - 26.0f;
+    std::string hintStr = "Кликните в любом месте или нажмите ESC / Пробел, чтобы закрыть";
+    float hintScale = 0.52f;
+    glm::vec2 hintSz = textRenderer.measureText(hintStr, hintScale);
+    textRenderer.renderText(
+        hintStr,
+        popX + (popW - hintSz.x) * 0.5f,
+        hintY,
+        hintScale,
+        glm::vec4(0.55f, 0.65f, 0.78f, 0.75f * alpha)
+    );
 }

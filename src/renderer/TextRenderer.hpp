@@ -30,6 +30,16 @@
 
 class Shader;
 
+// Структура для хранения интерактивной области гиперссылки / пояснения
+struct TextLinkHitBox {
+    std::string tagParam;
+    std::string title;
+    std::string description;
+    std::string word;
+    std::vector<glm::vec4> rects; // x, y, width, height для каждого строчного сегмента
+    bool isHovered = false;
+};
+
 // Структура для хранения метрик отдельного символа
 struct CharacterGlyph {
     float x0, y0, x1, y1; // Экранные координаты смещения
@@ -74,6 +84,13 @@ public:
     [[nodiscard]] float getLineHeight() const { return m_lineHeight; }
     [[nodiscard]] bool isValid() const { return m_fontTexture != 0; }
 
+    // Управление интерактивными гиперссылками в тексте
+    void setHoveredLink(std::string_view tagParam) { m_hoveredLinkParam = tagParam; }
+    [[nodiscard]] const std::string& getHoveredLink() const { return m_hoveredLinkParam; }
+    [[nodiscard]] const std::vector<TextLinkHitBox>& getRenderedLinks() const { return m_renderedLinks; }
+    void clearRenderedLinks() { m_renderedLinks.clear(); }
+    void addRenderedLink(TextLinkHitBox link) { m_renderedLinks.push_back(std::move(link)); }
+
 private:
     void initRenderData();
     const CharacterGlyph* getGlyph(uint32_t codepoint) const;
@@ -85,6 +102,9 @@ private:
     unsigned int m_VBO = 0;
     float m_fontSize = 32.0f;
     float m_lineHeight = 36.0f;
+
+    std::string m_hoveredLinkParam;
+    std::vector<TextLinkHitBox> m_renderedLinks;
 
     // Глифы: диапазон Latin (32..126) и Cyrillic (0x0400..0x04FF)
     std::vector<CharacterGlyph> m_latinGlyphs;

@@ -20,6 +20,7 @@
 #include "TextRenderer.hpp"
 #include "Shader.hpp"
 #include "resource/ResourceManager.hpp"
+#include "resource/GlossaryManager.hpp"
 #include "vfs/VFS.hpp"
 
 #include <glad/glad.h>
@@ -250,12 +251,42 @@ void TextRenderer::setProjection(const glm::mat4& projection) {
 // -----------------------------------------------------------------------------
 namespace {
 
+static std::string_view trimStr(std::string_view s) {
+    size_t start = s.find_first_not_of(" \t\r\n");
+    if (start == std::string_view::npos) return "";
+    size_t end = s.find_last_not_of(" \t\r\n");
+    return s.substr(start, end - start + 1);
+}
+
+static std::string unquoteStr(std::string_view s) {
+    s = trimStr(s);
+    if (s.size() >= 2 && ((s.front() == '"' && s.back() == '"') || (s.front() == '\'' && s.back() == '\''))) {
+        return std::string(s.substr(1, s.size() - 2));
+    }
+    return std::string(s);
+}
+
+struct ActiveLinkData {
+    std::string tagParam;
+    std::string title;
+    std::string description;
+    std::string word;
+    float lineStartX = 0.0f;
+    float lineEndX = 0.0f;
+    float lineMinY = 0.0f;
+    float lineMaxY = 0.0f;
+    bool hasLineGlyphs = false;
+    std::vector<glm::vec4> rects;
+    bool isHovered = false;
+};
+
 struct FormattingState {
     std::vector<glm::vec4> colorStack;
     std::vector<float> scaleStack;
     std::vector<float> alphaStack;
     int boldDepth = 0;
     int italicDepth = 0;
+    std::vector<ActiveLinkData> linkStack;
 
     void reset() {
         colorStack.clear();
@@ -263,6 +294,7 @@ struct FormattingState {
         alphaStack.clear();
         boldDepth = 0;
         italicDepth = 0;
+        linkStack.clear();
     }
 
     [[nodiscard]] glm::vec4 currentColor(const glm::vec4& defaultColor) const {
@@ -347,10 +379,41 @@ static bool parseColor(std::string_view s, glm::vec4& outColor) {
     return false;
 }
 
-static bool applyFormattingTag(std::string_view tag, FormattingState& state) {
+static bool applyFormattingTag(std::string_view tag, FormattingState& state, TextRenderer* renderer = nullptr) {
     if (tag.empty()) return false;
 
-    // Закрывающие теги
+    // Закрывающие теги гиперссылок и подсказок
+    if (tag == "/tip" || tag == "/link" || tag == "/glossary" || tag == "/tooltip") {
+        if (!state.linkStack.empty()) {
+            auto link = std::move(state.linkStack.back());
+            state.linkStack.pop_back();
+
+            if (link.hasLineGlyphs) {
+                link.rects.emplace_back(link.lineStartX, link.lineMinY, link.lineEndX - link.lineStartX, link.lineMaxY - link.lineMinY);
+            }
+            if (link.title.empty()) {
+                link.title = link.word;
+            }
+
+            if (renderer) {
+                TextLinkHitBox hit;
+                hit.tagParam = link.tagParam;
+                hit.title = link.title;
+                hit.description = link.description;
+                hit.word = link.word;
+                hit.rects = std::move(link.rects);
+                hit.isHovered = link.isHovered;
+                renderer->addRenderedLink(std::move(hit));
+            }
+
+            if (!state.colorStack.empty()) {
+                state.colorStack.pop_back();
+            }
+        }
+        return true;
+    }
+
+    // Закрывающие стандартные теги
     if (tag == "/b") {
         if (state.boldDepth > 0) state.boldDepth--;
         return true;
@@ -383,6 +446,50 @@ static bool applyFormattingTag(std::string_view tag, FormattingState& state) {
     }
     if (tag == "i") {
         state.italicDepth++;
+        return true;
+    }
+
+    // Теги гиперссылок и пояснений: {tip=...}, {link=...}, {glossary=...}, {tooltip=...}
+    if (tag.starts_with("tip=") || tag.starts_with("tip:") ||
+        tag.starts_with("link=") || tag.starts_with("link:") ||
+        tag.starts_with("glossary=") || tag.starts_with("glossary:") ||
+        tag.starts_with("tooltip=") || tag.starts_with("tooltip:")) {
+
+        size_t eqPos = tag.find('=');
+        if (eqPos == std::string_view::npos) eqPos = tag.find(':');
+        std::string_view rawVal = tag.substr(eqPos + 1);
+        std::string param = unquoteStr(rawVal);
+
+        ActiveLinkData link;
+        link.tagParam = param;
+
+        if (GlossaryManager::hasTerm(param)) {
+            const auto* term = GlossaryManager::getTerm(param);
+            link.title = term->title;
+            link.description = term->description;
+        } else {
+            size_t pipe = param.find('|');
+            if (pipe != std::string_view::npos) {
+                link.title = std::string(trimStr(param.substr(0, pipe)));
+                link.description = std::string(trimStr(param.substr(pipe + 1)));
+            } else {
+                link.title = ""; // заполнится словом между тегами
+                link.description = param;
+            }
+        }
+
+        if (renderer && !renderer->getHoveredLink().empty() &&
+            (renderer->getHoveredLink() == link.tagParam || (!link.title.empty() && renderer->getHoveredLink() == link.title))) {
+            link.isHovered = true;
+        }
+
+        // Цвет гиперссылки: при наведении ярче и насыщеннее
+        glm::vec4 linkColor = link.isHovered
+            ? glm::vec4(0.49f, 0.86f, 1.0f, 1.0f)
+            : glm::vec4(0.22f, 0.74f, 0.97f, 1.0f);
+        state.colorStack.push_back(linkColor);
+
+        state.linkStack.push_back(std::move(link));
         return true;
     }
 
@@ -514,7 +621,7 @@ void TextRenderer::renderText(std::string_view text, float x, float y, float sca
             while (close < end && *close != '}' && *close != '\n') close++;
             if (close < end && *close == '}') {
                 std::string_view tag(ptr + 1, close - (ptr + 1));
-                if (applyFormattingTag(tag, state)) {
+                if (applyFormattingTag(tag, state, this)) {
                     ptr = close + 1;
                     continue;
                 }
@@ -552,6 +659,14 @@ void TextRenderer::renderText(std::string_view text, float x, float y, float sca
 
         uint32_t cp = nextUtf8Char(ptr, end);
         if (cp == '\n') {
+            if (!state.linkStack.empty()) {
+                auto& curLink = state.linkStack.back();
+                if (curLink.hasLineGlyphs) {
+                    curLink.rects.emplace_back(curLink.lineStartX, curLink.lineMinY, curLink.lineEndX - curLink.lineStartX, curLink.lineMaxY - curLink.lineMinY);
+                    curLink.hasLineGlyphs = false;
+                }
+                curLink.lineStartX = startX;
+            }
             curX = startX;
             curY += m_lineHeight * state.currentScale(scale);
             continue;
@@ -571,6 +686,38 @@ void TextRenderer::renderText(std::string_view text, float x, float y, float sca
         float ypos = curY + glyph->y0 * effScale;
         float w = (glyph->x1 - glyph->x0) * effScale;
         float h = (glyph->y1 - glyph->y0) * effScale;
+
+        // Если активна гиперссылка, обновляем ее границы и накапливаем символы
+        if (!state.linkStack.empty()) {
+            auto& curLink = state.linkStack.back();
+            if (cp < 128) {
+                curLink.word += static_cast<char>(cp);
+            } else if (cp <= 0x7FF) {
+                curLink.word += static_cast<char>(0xC0 | ((cp >> 6) & 0x1F));
+                curLink.word += static_cast<char>(0x80 | (cp & 0x3F));
+            } else if (cp <= 0xFFFF) {
+                curLink.word += static_cast<char>(0xE0 | ((cp >> 12) & 0x0F));
+                curLink.word += static_cast<char>(0x80 | ((cp >> 6) & 0x3F));
+                curLink.word += static_cast<char>(0x80 | (cp & 0x3F));
+            }
+
+            float glyphLeft = curX;
+            float glyphRight = curX + glyph->xAdvance * effScale;
+            float glyphTop = curY - m_fontSize * effScale * 0.9f;
+            float glyphBottom = curY + m_lineHeight * effScale * 0.25f;
+
+            if (!curLink.hasLineGlyphs) {
+                curLink.lineStartX = glyphLeft;
+                curLink.lineEndX = glyphRight;
+                curLink.lineMinY = glyphTop;
+                curLink.lineMaxY = glyphBottom;
+                curLink.hasLineGlyphs = true;
+            } else {
+                curLink.lineEndX = glyphRight;
+                curLink.lineMinY = std::min(curLink.lineMinY, glyphTop);
+                curLink.lineMaxY = std::max(curLink.lineMaxY, glyphBottom);
+            }
+        }
 
         float s0 = glyph->s0;
         float t0 = glyph->t0;

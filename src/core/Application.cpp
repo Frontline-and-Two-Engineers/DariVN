@@ -31,6 +31,7 @@
 #include "renderer/RenderPipeline.hpp"
 #include "resource/ResourceManager.hpp"
 #include "resource/Localization.hpp"
+#include "resource/GlossaryManager.hpp"
 #include "scene/CharacterSprite.hpp"
 #include "scene/DialogueBox.hpp"
 #include "scene/Button.hpp"
@@ -256,6 +257,17 @@ bool Application::init(int argc, char* argv[]) {
         std::string menuMusic = Config::getString("menu.music", "");
         if (!menuMusic.empty()) {
             m_audioEngine->playMusic(resolveAsset(menuMusic), true, defaultBgmCrossfade);
+        }
+    }
+
+    // Загрузка словаря терминов / глоссария по умолчанию (если файл присутствует)
+    std::string glossaryPath = resolveAsset("assets/glossary.vn");
+    if (!glossaryPath.empty() && DariVN::VFS::exists(glossaryPath)) {
+        GlossaryManager::loadFromFile(glossaryPath);
+    } else {
+        std::string termsPath = resolveAsset("assets/terms.vn");
+        if (!termsPath.empty() && DariVN::VFS::exists(termsPath)) {
+            GlossaryManager::loadFromFile(termsPath);
         }
     }
 
